@@ -12,6 +12,14 @@ import { handleAuthCommand } from "./commands/auth.js";
 import { handleProfileCommand } from "./commands/profile.js";
 import { handleLimitsCommand } from "./commands/limits.js";
 import { handleAdsCommand } from "./commands/ads.js";
+import {
+  handleBusinessCommand,
+  handleInvoicesCommand,
+  handleAdLibraryCommand,
+} from "./commands/business.js";
+import { handleInstagramCommand } from "./commands/instagram.js";
+import { handleWhatsappCommand } from "./commands/whatsapp.js";
+import { handlePagesPlusCommand } from "./commands/pages-plus.js";
 
 const VERSION = "2.0.0";
 const GRAPH_API_BASE = "https://graph.facebook.com/v22.0";
@@ -904,6 +912,36 @@ async function main() {
 
   if (command === "ads") {
     out(await handleAdsCommand(rest, runtime));
+    return;
+  }
+
+  if (command === "business") {
+    out(await handleBusinessCommand(rest, runtime));
+    return;
+  }
+
+  if (command === "invoices") {
+    out(await handleInvoicesCommand(rest, runtime));
+    return;
+  }
+
+  if (command === "ad-library") {
+    out(await handleAdLibraryCommand(rest, runtime));
+    return;
+  }
+
+  if (command === "ig") {
+    out(await handleInstagramCommand(rest, runtime));
+    return;
+  }
+
+  if (command === "wa") {
+    out(await handleWhatsappCommand(rest, runtime));
+    return;
+  }
+
+  if (command === "page-insights" || command === "post-local" || command === "draft" || command === "me") {
+    out(await handlePagesPlusCommand(command, rest, runtime));
     return;
   }
 
