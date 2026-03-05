@@ -46,3 +46,69 @@ export const listAudiences = (deps: Deps, accountId: string, token: string, para
 
 export const getAudience = (deps: Deps, audienceId: string, token: string, params?: Record<string, string>) =>
   deps.graphApi("GET", audienceId, token, params);
+
+export const createCampaign = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", `act_${accountId}/campaigns`, token, payload as any);
+
+export const updateCampaign = (deps: Deps, campaignId: string, token: string, payload: Record<string, unknown>) =>
+  deps.graphApi("POST", campaignId, token, payload as any);
+
+export const pauseCampaign = (deps: Deps, campaignId: string, token: string) =>
+  deps.graphApi("POST", campaignId, token, { status: "PAUSED" } as any);
+
+export const activateCampaign = (deps: Deps, campaignId: string, token: string) =>
+  deps.graphApi("POST", campaignId, token, { status: "ACTIVE" } as any);
+
+export const deleteCampaign = (deps: Deps, campaignId: string, token: string) =>
+  deps.graphApi("DELETE", campaignId, token);
+
+export const createAdSet = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", `act_${accountId}/adsets`, token, payload as any);
+
+export const updateAdSet = (deps: Deps, adSetId: string, token: string, payload: Record<string, unknown>) =>
+  deps.graphApi("POST", adSetId, token, payload as any);
+
+export const createAd = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", `act_${accountId}/ads`, token, payload as any);
+
+export const updateAd = (deps: Deps, adId: string, token: string, payload: Record<string, unknown>) =>
+  deps.graphApi("POST", adId, token, payload as any);
+
+export const createCreative = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", `act_${accountId}/adcreatives`, token, payload as any);
+
+export const uploadImage = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", `act_${accountId}/adimages`, token, payload as any);
+
+export const createAudience = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", `act_${accountId}/customaudiences`, token, payload as any);
+
+export const updateAudience = (deps: Deps, audienceId: string, token: string, payload: Record<string, unknown>) =>
+  deps.graphApi("POST", audienceId, token, payload as any);
+
+export const deleteAudience = (deps: Deps, audienceId: string, token: string) =>
+  deps.graphApi("DELETE", audienceId, token);
