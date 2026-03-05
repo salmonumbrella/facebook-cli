@@ -7,7 +7,12 @@
     "start": "bun run src/server.ts",
     "cli": "bun run cli/fbcli.ts",
     "test": "bun test",
-    "verify": "bash scripts/verify.sh"
+    "verify": "bash scripts/verify.sh",
+    "lint": "oxlint -c ./.oxlintrc.json src cli tests scripts",
+    "lint:all": "oxlint -c ./.oxlintrc.json src cli tests scripts",
+    "format": "oxfmt --ignore-path .gitignore --ignore-path .oxfmtignore",
+    "format:check": "oxfmt --check --ignore-path .gitignore --ignore-path .oxfmtignore .",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
@@ -17,6 +22,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "lefthook": "^2.1.2",
+    "oxfmt": "^0.36.0",
+    "oxlint": "^1.51.0"
   }
 }
