@@ -41,6 +41,31 @@ export const getCreative = (deps: Deps, creativeId: string, token: string, param
 export const getInsights = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
   deps.graphApi("GET", `act_${accountId}/insights`, token, params);
 
+export async function getInsightsWithBreakdowns(
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params: Record<string, string>,
+) {
+  const accountPath = accountId.startsWith("act_") ? accountId : `act_${accountId}`;
+  const response = await deps.graphApi("GET", `${accountPath}/insights`, token, params);
+  if (!Array.isArray(response?.data)) return response;
+
+  return {
+    ...response,
+    data: response.data.map((row: Record<string, unknown>) => {
+      const spend = Number(row.spend ?? 0);
+      const conversions = Number(row.conversions ?? 0);
+      const conversionValue = Number(row.conversion_value ?? 0);
+      return {
+        ...row,
+        cpa: conversions > 0 ? spend / conversions : 0,
+        roas: spend > 0 ? conversionValue / spend : 0,
+      };
+    }),
+  };
+}
+
 export const listAudiences = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
   deps.graphApi("GET", `act_${accountId}/customaudiences`, token, params);
 
