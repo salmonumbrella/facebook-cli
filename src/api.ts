@@ -4,6 +4,7 @@
  */
 
 import { GRAPH_API_BASE, GRAPH_API_VERSION } from "./config.js";
+import { fetchWithRetry } from "./lib/http.js";
 
 // --- Debug logging (stderr, only when DEBUG=1) ---
 
@@ -37,7 +38,7 @@ export async function graphApi(
     opts.body = JSON.stringify(body);
   }
   debug("graph", method, endpoint);
-  const res = await fetch(url.toString(), opts);
+  const res = await fetchWithRetry(url.toString(), opts);
   return res.json();
 }
 
@@ -86,7 +87,7 @@ export async function graphApiBatch(
     url.searchParams.set("include_headers", "false");
     url.searchParams.set("batch", JSON.stringify(batch));
 
-    const res = await fetch(url.toString(), { method: "POST" });
+    const res = await fetchWithRetry(url.toString(), { method: "POST" });
     const raw: Array<{ code: number; body: string } | null> = await res.json();
 
     for (const item of raw) {
@@ -130,7 +131,7 @@ export async function ruploadApi(
     opts.body = body;
   }
   debug("rupload", endpoint);
-  const res = await fetch(url, opts);
+  const res = await fetchWithRetry(url, opts);
   return res.json();
 }
 
@@ -162,7 +163,7 @@ export async function resumableUpload(
   // Step 2: Transfer binary
   debug("upload:transfer", sessionId);
   const uploadUrl = `${GRAPH_API_BASE}/${sessionId}`;
-  const res = await fetch(uploadUrl, {
+  const res = await fetchWithRetry(uploadUrl, {
     method: "POST",
     headers: {
       Authorization: `OAuth ${userToken}`,
