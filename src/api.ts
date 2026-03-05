@@ -42,6 +42,21 @@ export async function graphApi(
   return res.json();
 }
 
+export async function paginateAll<T>(firstUrl: string, limit?: number): Promise<T[]> {
+  const out: T[] = [];
+  let nextUrl: string | undefined = firstUrl;
+
+  while (nextUrl) {
+    const res = await fetchWithRetry(nextUrl, { method: "GET" });
+    const json = (await res.json()) as { data?: T[]; paging?: { next?: string } };
+    if (json.data) out.push(...json.data);
+    if (limit && out.length >= limit) return out.slice(0, limit);
+    nextUrl = json.paging?.next;
+  }
+
+  return out;
+}
+
 // --- Batch API ---
 
 const BATCH_LIMIT = 50;
