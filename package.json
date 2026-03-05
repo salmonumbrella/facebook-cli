@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "cli-table3": "^0.6.5",
+    "csv-stringify": "^6.6.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
