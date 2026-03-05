@@ -141,3 +141,72 @@ export const updateAudience = (deps: Deps, audienceId: string, token: string, pa
 
 export const deleteAudience = (deps: Deps, audienceId: string, token: string) =>
   deps.graphApi("DELETE", audienceId, token);
+
+export interface DuplicateCampaignOptions {
+  name?: string;
+  budgetFactor?: number;
+}
+
+export async function duplicateCampaign(
+  deps: Deps,
+  campaignId: string,
+  token: string,
+  accountId: string,
+  options: DuplicateCampaignOptions = {},
+) {
+  const accountPath = accountId.startsWith("act_") ? accountId : `act_${accountId}`;
+  const sourceCampaign = await deps.graphApi("GET", campaignId, token);
+  const adSetsRes = await deps.graphApi("GET", `${campaignId}/adsets`, token);
+  const sourceAdSets: Array<Record<string, unknown>> = Array.isArray(adSetsRes?.data) ? adSetsRes.data : [];
+
+  const adsByAdSet = new Map<string, Array<Record<string, unknown>>>();
+  for (const adSet of sourceAdSets) {
+    const adSetId = String(adSet.id ?? "");
+    if (!adSetId) continue;
+    const adsRes = await deps.graphApi("GET", `${adSetId}/ads`, token);
+    adsByAdSet.set(adSetId, Array.isArray(adsRes?.data) ? adsRes.data : []);
+  }
+
+  const budgetFactor = options.budgetFactor ?? 1;
+  const baseBudget = Number(sourceCampaign?.daily_budget ?? sourceCampaign?.lifetime_budget ?? 0);
+  const scaledBudget = baseBudget > 0 ? Math.round(baseBudget * budgetFactor) : undefined;
+  const newCampaignPayload: Record<string, string> = {
+    ...(sourceCampaign?.objective ? { objective: String(sourceCampaign.objective) } : {}),
+    ...(options.name ? { name: options.name } : sourceCampaign?.name ? { name: String(sourceCampaign.name) } : {}),
+    ...(scaledBudget ? { daily_budget: String(scaledBudget) } : {}),
+    status: "PAUSED",
+  };
+  const newCampaign = await deps.graphApi("POST", `${accountPath}/campaigns`, token, newCampaignPayload);
+
+  const adSetMap = new Map<string, string>();
+  for (const adSet of sourceAdSets) {
+    const adSetId = String(adSet.id ?? "");
+    if (!adSetId) continue;
+    const payload: Record<string, string> = {
+      ...(adSet.name ? { name: String(adSet.name) } : {}),
+      campaign_id: String(newCampaign?.id ?? ""),
+      status: "PAUSED",
+    };
+    const createdAdSet = await deps.graphApi("POST", `${accountPath}/adsets`, token, payload);
+    if (createdAdSet?.id) adSetMap.set(adSetId, String(createdAdSet.id));
+  }
+
+  const createdAds: any[] = [];
+  for (const [oldAdSetId, ads] of adsByAdSet.entries()) {
+    for (const ad of ads) {
+      const payload: Record<string, unknown> = {
+        ...(ad.name ? { name: String(ad.name) } : {}),
+        adset_id: adSetMap.get(oldAdSetId),
+        creative: ad.creative ?? undefined,
+        status: "PAUSED",
+      };
+      createdAds.push(await deps.graphApi("POST", `${accountPath}/ads`, token, undefined, payload));
+    }
+  }
+
+  return {
+    campaign: newCampaign,
+    adSetCount: adSetMap.size,
+    adCount: createdAds.length,
+  };
+}
