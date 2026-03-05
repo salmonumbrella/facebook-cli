@@ -25,6 +25,10 @@ export async function graphApi(
   params?: Record<string, string>,
   body?: Record<string, unknown>,
 ): Promise<any> {
+  if (process.env.FB_DRY_RUN === "1" && method !== "GET") {
+    return { dry_run: true, method, endpoint, params, body };
+  }
+
   const url = new URL(`${GRAPH_API_BASE}/${endpoint}`);
   url.searchParams.set("access_token", token);
   if (params) {
