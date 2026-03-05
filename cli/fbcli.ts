@@ -821,10 +821,56 @@ USAGE
   fbcli <command> [args...]
 
 GLOBAL FLAGS
-  --help       Show this help
-  --version    Show version
+  --help                   Show this help
+  --version                Show version
+  --output json|table|csv  Output format
+  --dry-run                Disable non-GET mutations
+  --api-version <vX.Y>     Override Graph API version
+  --access-token <token>   Override token for this run
+  --profile <name>         Use named profile
 
 COMMANDS
+  Auth
+    auth login [--scopes a,b] [--redirect-uri URI] [--no-open]
+    auth status
+    auth logout
+    auth refresh
+
+  Profiles
+    profile add <name> [--access-token TOKEN]
+    profile switch <name>
+    profile show [name]
+    profile remove <name>
+    profile list
+
+  Runtime
+    limits check
+
+  Ads
+    ads accounts list|get ...
+    ads campaigns list|get|create|update|pause|activate|delete ...
+    ads adsets list|get|create|update ...
+    ads ads list|get|create|update ...
+    ads creatives list|get|create ...
+    ads images upload ...
+    ads insights get ...
+    ads audiences list|get|create|update|delete ...
+    ads deploy <config-path> <account-id>
+    ads validate <config-path>
+    ads audience search-interests|search-behaviors|estimate-size ...
+    ads duplicate <campaign-id> <account-id> [name] [budgetFactor]
+    ads stats collect|analyze|validate|export ...
+    ads optimize validate|create|update ...
+    ads exportyaml <campaign-id>
+
+  Business + Social
+    business info|ad-accounts ...
+    invoices list|download ...
+    ad-library search <query>
+    ig accounts|media|account|comments|publish|stories ...
+    wa send|templates|phone-numbers ...
+    page-insights|post-local|draft|me ...
+
   Pages
     pages                                List all configured pages
 

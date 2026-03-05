@@ -1,3 +1,5 @@
+import type { ProfileData } from "./profiles.js";
+
 export interface BuildFacebookOAuthUrlInput {
   appId: string;
   redirectUri: string;
@@ -13,6 +15,28 @@ export function buildFacebookOAuthUrl(input: BuildFacebookOAuthUrlInput): string
   url.searchParams.set("state", input.state);
   url.searchParams.set("scope", input.scopes.join(","));
   return url.toString();
+}
+
+export function buildAppAccessToken(appId: string, appSecret: string): string {
+  return `${appId}|${appSecret}`;
+}
+
+export function computeExpiresAt(expiresIn?: number, nowMs = Date.now()): string | undefined {
+  if (!expiresIn || !Number.isFinite(expiresIn) || expiresIn <= 0) return undefined;
+  return new Date(nowMs + expiresIn * 1000).toISOString();
+}
+
+async function parseFacebookJsonResponse(res: Response): Promise<any> {
+  const data = await res.json();
+  if (!res.ok) {
+    const error = data?.error;
+    const message =
+      typeof error?.message === "string"
+        ? error.message
+        : `Facebook auth request failed (${res.status})`;
+    throw new Error(message);
+  }
+  return data;
 }
 
 export interface ExchangeCodeForTokenInput {
@@ -31,7 +55,7 @@ export async function exchangeCodeForToken(input: ExchangeCodeForTokenInput): Pr
   url.searchParams.set("code", input.code);
 
   const res = await fetch(url.toString(), { method: "GET" });
-  return res.json();
+  return parseFacebookJsonResponse(res);
 }
 
 export interface ExchangeForLongLivedTokenInput {
@@ -51,7 +75,7 @@ export async function exchangeForLongLivedToken(
   url.searchParams.set("fb_exchange_token", input.accessToken);
 
   const res = await fetch(url.toString(), { method: "GET" });
-  return res.json();
+  return parseFacebookJsonResponse(res);
 }
 
 export interface DebugTokenInput {
@@ -65,24 +89,19 @@ export async function debugToken(input: DebugTokenInput): Promise<any> {
   url.searchParams.set("input_token", input.inputToken);
   url.searchParams.set("access_token", input.appAccessToken);
   const res = await fetch(url.toString(), { method: "GET" });
-  return res.json();
-}
-
-export interface ProfileRecord {
-  access_token?: string;
-  defaults?: Record<string, string>;
+  return parseFacebookJsonResponse(res);
 }
 
 export interface ProfileStoreLike {
   active: string;
-  profiles: Record<string, ProfileRecord>;
+  profiles: Record<string, ProfileData>;
 }
 
 export function clearStoredAuth(data: ProfileStoreLike, profileName?: string): ProfileStoreLike {
   const name = profileName ?? data.active;
   const existing = data.profiles[name];
   if (!existing) return data;
-  const { access_token: _removed, ...rest } = existing;
+  const { access_token: _removed, auth: _authRemoved, ...rest } = existing;
   data.profiles[name] = rest;
   return data;
 }
