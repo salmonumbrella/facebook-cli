@@ -47,6 +47,35 @@ export const listAudiences = (deps: Deps, accountId: string, token: string, para
 export const getAudience = (deps: Deps, audienceId: string, token: string, params?: Record<string, string>) =>
   deps.graphApi("GET", audienceId, token, params);
 
+// Audience interest search — GET /search?type=adinterest&q=...
+export const searchInterests = (deps: Deps, token: string, query: string, limit = 25) =>
+  deps.graphApi("GET", "search", token, {
+    type: "adinterest",
+    q: query,
+    limit: String(limit),
+  });
+
+// Audience behavior search — GET /search?type=adTargetingCategory&class=behaviors&q=...
+export const searchBehaviors = (deps: Deps, token: string, query: string, limit = 25) =>
+  deps.graphApi("GET", "search", token, {
+    type: "adTargetingCategory",
+    class: "behaviors",
+    q: query,
+    limit: String(limit),
+  });
+
+// Audience size estimate — GET /act_{id}/delivery_estimate
+export const getAudienceSizeEstimate = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  targetingSpec: Record<string, unknown>,
+) =>
+  deps.graphApi("GET", `act_${accountId}/delivery_estimate`, token, {
+    targeting_spec: JSON.stringify(targetingSpec),
+    optimization_goal: "REACH",
+  });
+
 export const createCampaign = (
   deps: Deps,
   accountId: string,
