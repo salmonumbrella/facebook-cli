@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "bun run src/server.ts",
-    "cli": "bun run cli/fbcli.ts"
+    "cli": "bun run cli/fbcli.ts",
+    "test": "bun test",
+    "verify": "bash scripts/verify.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
