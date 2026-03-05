@@ -9,6 +9,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { loadAssets, loadAppConfig, type PageAsset } from "./config.js";
 import { graphApi, graphApiBatch, ruploadApi, debug, isError } from "./api.js";
+import { registerAdsTools } from "./tools/ads-tools.js";
 
 // --- Page registry ---
 
@@ -74,6 +75,7 @@ async function getInsight(pageName: string, postId: string, metric: string) {
 // --- Server ---
 
 const server = new McpServer({ name: "FacebookMCP", version: "3.0.0" });
+registerAdsTools(server as any, { graphApi });
 
 // ── Pages ───────────────────────────────────────────────────────────────
 
