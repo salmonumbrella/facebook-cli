@@ -66,7 +66,7 @@ export function validateDeployConfig(config: unknown): ValidationResult {
     errors.push("campaign.objective is required");
   }
 
-  if (!parsed.ad_set) {
+  if (Object.keys(parsed.ad_set).length === 0) {
     errors.push("ad_set is required");
   }
 
