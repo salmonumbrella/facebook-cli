@@ -5,7 +5,10 @@ function usage(): never {
   throw new Error("Usage: fbcli profile <add|switch|show|remove|list> ...");
 }
 
-export async function handleProfileCommand(args: string[], runtime: RuntimeContext): Promise<unknown> {
+export async function handleProfileCommand(
+  args: string[],
+  runtime: RuntimeContext,
+): Promise<unknown> {
   const sub = args[0];
   const store = createProfileStore(runtime.profilePath);
   const data = store.load();
@@ -17,7 +20,7 @@ export async function handleProfileCommand(args: string[], runtime: RuntimeConte
       const tokenIdx = args.indexOf("--access-token");
       const token = tokenIdx !== -1 && args[tokenIdx + 1] ? args[tokenIdx + 1] : undefined;
       data.profiles[name] = {
-        ...(data.profiles[name] ?? {}),
+        ...data.profiles[name],
         ...(token ? { access_token: token } : {}),
       };
       if (!data.active) data.active = name;

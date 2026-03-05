@@ -11,11 +11,15 @@ import type { RuntimeContext } from "../lib/context.js";
 const deps = { graphApi };
 
 function requireToken(runtime: RuntimeContext): string {
-  if (!runtime.accessToken) throw new Error("Missing access token. Use --access-token or profile/env token.");
+  if (!runtime.accessToken)
+    throw new Error("Missing access token. Use --access-token or profile/env token.");
   return runtime.accessToken;
 }
 
-export async function handleBusinessCommand(args: string[], runtime: RuntimeContext): Promise<unknown> {
+export async function handleBusinessCommand(
+  args: string[],
+  runtime: RuntimeContext,
+): Promise<unknown> {
   const [sub, ...rest] = args;
   if (!sub) throw new Error("Usage: fbcli business <info|ad-accounts> ...");
   if (runtime.dryRun) return { ok: true, route: `business ${sub}` };
@@ -26,7 +30,10 @@ export async function handleBusinessCommand(args: string[], runtime: RuntimeCont
   throw new Error("Usage: fbcli business <info|ad-accounts> <business-id>");
 }
 
-export async function handleInvoicesCommand(args: string[], runtime: RuntimeContext): Promise<unknown> {
+export async function handleInvoicesCommand(
+  args: string[],
+  runtime: RuntimeContext,
+): Promise<unknown> {
   const [sub, ...rest] = args;
   if (!sub) throw new Error("Usage: fbcli invoices <list|download> ...");
   if (runtime.dryRun) return { ok: true, route: `invoices ${sub}` };
@@ -45,7 +52,10 @@ export async function handleInvoicesCommand(args: string[], runtime: RuntimeCont
   throw new Error("Usage: fbcli invoices <list|download> ...");
 }
 
-export async function handleAdLibraryCommand(args: string[], runtime: RuntimeContext): Promise<unknown> {
+export async function handleAdLibraryCommand(
+  args: string[],
+  runtime: RuntimeContext,
+): Promise<unknown> {
   const [sub, ...rest] = args;
   if (sub !== "search") throw new Error("Usage: fbcli ad-library search <query>");
   if (runtime.dryRun) return { ok: true, route: "ad-library search" };

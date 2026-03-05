@@ -25,8 +25,12 @@ export async function listIgAccounts(deps: Deps, token: string) {
   };
 }
 
-export const listIgMedia = (deps: Deps, igUserId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `${igUserId}/media`, token, params);
+export const listIgMedia = (
+  deps: Deps,
+  igUserId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `${igUserId}/media`, token, params);
 
 export const getIgMediaInsights = (
   deps: Deps,
@@ -43,8 +47,12 @@ export const getIgAccountInsights = (
   period = "day",
 ) => deps.graphApi("GET", `${igUserId}/insights`, token, { metric, period });
 
-export const listIgComments = (deps: Deps, mediaId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `${mediaId}/comments`, token, params);
+export const listIgComments = (
+  deps: Deps,
+  mediaId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `${mediaId}/comments`, token, params);
 
 export const replyIgComment = (deps: Deps, commentId: string, token: string, message: string) =>
   deps.graphApi("POST", `${commentId}/replies`, token, { message });
@@ -67,5 +75,9 @@ export async function publishIgMedia(
   });
 }
 
-export const listIgStories = (deps: Deps, igUserId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `${igUserId}/stories`, token, params);
+export const listIgStories = (
+  deps: Deps,
+  igUserId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `${igUserId}/stories`, token, params);

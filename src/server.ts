@@ -7,7 +7,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { loadAssets, loadAppConfig, type PageAsset } from "./config.js";
+import { loadAssets, type PageAsset } from "./config.js";
 import { graphApi, graphApiBatch, ruploadApi, debug, isError } from "./api.js";
 import { registerAdsTools } from "./tools/ads-tools.js";
 import { registerBusinessTools } from "./tools/business-tools.js";
@@ -23,8 +23,6 @@ const pages = new Map<string, PageAsset>();
 for (const asset of assets) {
   pages.set(asset.page_name, asset);
 }
-
-const appConfig = loadAppConfig();
 
 function getPage(name: string): PageAsset {
   const page = pages.get(name);
@@ -202,9 +200,7 @@ server.tool(
   { page_name: z.string(), post_id: z.string(), comment_id: z.string(), message: z.string() },
   async ({ page_name, comment_id, message }) => {
     const p = getPage(page_name);
-    return json(
-      await graphApi("POST", `${comment_id}/comments`, p.page_access_token, { message }),
-    );
+    return json(await graphApi("POST", `${comment_id}/comments`, p.page_access_token, { message }));
   },
 );
 
@@ -251,7 +247,10 @@ server.tool(
 server.tool(
   "filter_negative_comments",
   "Filter comments for basic negative sentiment.\nInput: page_name (str), comments (JSON string of comments response)\nOutput: list of flagged negative comments",
-  { page_name: z.string(), comments: z.string().describe("JSON string of the comments API response") },
+  {
+    page_name: z.string(),
+    comments: z.string().describe("JSON string of the comments API response"),
+  },
   async ({ comments }) => {
     const parsed = JSON.parse(comments);
     const data: any[] = parsed.data ?? [];
@@ -569,7 +568,12 @@ server.tool(
     };
     if (description) finishParams.description = description;
     if (title) finishParams.title = title;
-    const result = await graphApi("POST", `${p.fb_page_id}/video_reels`, p.page_access_token, finishParams);
+    const result = await graphApi(
+      "POST",
+      `${p.fb_page_id}/video_reels`,
+      p.page_access_token,
+      finishParams,
+    );
     if (isError(result)) return json({ step: "publish", video_id: videoId, ...result });
     return json(result);
   },
@@ -591,9 +595,7 @@ server.tool(
   { page_name: z.string(), video_id: z.string() },
   async ({ page_name, video_id }) => {
     const p = getPage(page_name);
-    return json(
-      await graphApi("GET", video_id, p.page_access_token, { fields: "status" }),
-    );
+    return json(await graphApi("GET", video_id, p.page_access_token, { fields: "status" }));
   },
 );
 
@@ -700,9 +702,7 @@ server.tool(
     const params: Record<string, string> = { file_url: video_url };
     if (title) params.title = title;
     if (description) params.description = description;
-    return json(
-      await graphApi("POST", `${p.fb_page_id}/videos`, p.page_access_token, params),
-    );
+    return json(await graphApi("POST", `${p.fb_page_id}/videos`, p.page_access_token, params));
   },
 );
 
@@ -823,7 +823,8 @@ server.tool(
       optimization_goal,
     };
     if (duration_seconds !== undefined) body.duration_seconds = duration_seconds;
-    if (scheduled_timestamp !== undefined) body.scheduled_experiment_timestamp = scheduled_timestamp;
+    if (scheduled_timestamp !== undefined)
+      body.scheduled_experiment_timestamp = scheduled_timestamp;
     return json(
       await graphApi("POST", `${p.fb_page_id}/ab_tests`, p.page_access_token, undefined, body),
     );
@@ -853,9 +854,7 @@ server.tool(
     const params: Record<string, string> = {};
     if (since) params.since = since;
     if (until) params.until = until;
-    return json(
-      await graphApi("GET", `${p.fb_page_id}/ab_tests`, p.page_access_token, params),
-    );
+    return json(await graphApi("GET", `${p.fb_page_id}/ab_tests`, p.page_access_token, params));
   },
 );
 

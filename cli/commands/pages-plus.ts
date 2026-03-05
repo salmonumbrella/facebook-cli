@@ -10,16 +10,23 @@ import type { RuntimeContext } from "../lib/context.js";
 const deps = { graphApi };
 
 function requireToken(runtime: RuntimeContext): string {
-  if (!runtime.accessToken) throw new Error("Missing access token. Use --access-token or profile/env token.");
+  if (!runtime.accessToken)
+    throw new Error("Missing access token. Use --access-token or profile/env token.");
   return runtime.accessToken;
 }
 
-export async function handlePagesPlusCommand(command: string, args: string[], runtime: RuntimeContext): Promise<unknown> {
-  if (runtime.dryRun) return { ok: true, route: `${command}${args.length ? ` ${args.join(" ")}` : ""}` };
+export async function handlePagesPlusCommand(
+  command: string,
+  args: string[],
+  runtime: RuntimeContext,
+): Promise<unknown> {
+  if (runtime.dryRun)
+    return { ok: true, route: `${command}${args.length ? ` ${args.join(" ")}` : ""}` };
   const token = requireToken(runtime);
 
   if (command === "page-insights") {
-    const metric = args[0] && !["fans", "reach", "views", "engagement"].includes(args[0]) ? args[0] : undefined;
+    const metric =
+      args[0] && !["fans", "reach", "views", "engagement"].includes(args[0]) ? args[0] : undefined;
     const pageId = metric ? args[1] : args[0];
     const alias = args[0];
     const resolvedMetric =

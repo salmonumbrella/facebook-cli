@@ -41,7 +41,9 @@ export interface ExchangeForLongLivedTokenInput {
   version: string;
 }
 
-export async function exchangeForLongLivedToken(input: ExchangeForLongLivedTokenInput): Promise<any> {
+export async function exchangeForLongLivedToken(
+  input: ExchangeForLongLivedTokenInput,
+): Promise<any> {
   const url = new URL(`https://graph.facebook.com/${input.version}/oauth/access_token`);
   url.searchParams.set("grant_type", "fb_exchange_token");
   url.searchParams.set("client_id", input.appId);

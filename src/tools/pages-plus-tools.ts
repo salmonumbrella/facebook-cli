@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { createDraftPost, getMe, getPageInsightsMetric, uploadLocalPhoto } from "../domains/pages-plus.js";
+import {
+  createDraftPost,
+  getMe,
+  getPageInsightsMetric,
+  uploadLocalPhoto,
+} from "../domains/pages-plus.js";
 
 type GraphFn = (
   method: string,
@@ -108,7 +113,11 @@ export function registerPagesPlusTools(server: ToolServerLike, deps: PagesPlusTo
     { access_token: z.string(), params_json: z.string().optional() },
     async ({ access_token, params_json }) => {
       return json(
-        await getMe(domainDeps, String(access_token), parseObject(params_json ? String(params_json) : undefined)),
+        await getMe(
+          domainDeps,
+          String(access_token),
+          parseObject(params_json ? String(params_json) : undefined),
+        ),
       );
     },
   );

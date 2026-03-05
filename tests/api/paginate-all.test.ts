@@ -8,7 +8,9 @@ describe("paginateAll", () => {
     globalThis.fetch = async () => {
       calls++;
       if (calls === 1) {
-        return new Response(JSON.stringify({ data: [{ id: "1" }], paging: { next: "https://next" } }));
+        return new Response(
+          JSON.stringify({ data: [{ id: "1" }], paging: { next: "https://next" } }),
+        );
       }
       return new Response(JSON.stringify({ data: [{ id: "2" }] }));
     };

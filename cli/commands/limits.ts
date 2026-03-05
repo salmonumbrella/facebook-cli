@@ -1,6 +1,9 @@
 import type { RuntimeContext } from "../lib/context.js";
 
-export async function handleLimitsCommand(args: string[], _runtime: RuntimeContext): Promise<unknown> {
+export async function handleLimitsCommand(
+  args: string[],
+  _runtime: RuntimeContext,
+): Promise<unknown> {
   const sub = args[0];
   if (sub !== "check") {
     throw new Error("Usage: fbcli limits check");

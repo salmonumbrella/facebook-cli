@@ -101,10 +101,20 @@ export async function executeDeploy(
 
   let imageResult: any;
   if (config.image && Object.keys(config.image).length > 0) {
-    imageResult = await graph("POST", `act_${accountId}/adimages`, token, config.image as Record<string, string>);
+    imageResult = await graph(
+      "POST",
+      `act_${accountId}/adimages`,
+      token,
+      config.image as Record<string, string>,
+    );
   }
 
-  const campaign = await graph("POST", `act_${accountId}/campaigns`, token, config.campaign as Record<string, string>);
+  const campaign = await graph(
+    "POST",
+    `act_${accountId}/campaigns`,
+    token,
+    config.campaign as Record<string, string>,
+  );
   const adSetPayload = {
     ...config.ad_set,
     campaign_id: campaign?.id,
@@ -112,7 +122,7 @@ export async function executeDeploy(
   const adSet = await graph("POST", `act_${accountId}/adsets`, token, adSetPayload);
 
   const creativePayload = {
-    ...(config.creative ?? {}),
+    ...config.creative,
     ...(imageResult?.images ? { image_hash: Object.keys(imageResult.images)[0] } : {}),
   } as Record<string, string>;
   const creative = await graph("POST", `act_${accountId}/adcreatives`, token, creativePayload);

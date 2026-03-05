@@ -9,7 +9,10 @@ describe("ads deploy validation", () => {
   });
 
   it("rejects missing ad_set", () => {
-    const result = validateDeployConfig({ campaign: { objective: "OUTCOME_TRAFFIC" }, ads: [{}] } as any);
+    const result = validateDeployConfig({
+      campaign: { objective: "OUTCOME_TRAFFIC" },
+      ads: [{}],
+    } as any);
     expect(result.valid).toBe(false);
     expect(result.errors.some((x) => x.includes("ad_set"))).toBe(true);
   });

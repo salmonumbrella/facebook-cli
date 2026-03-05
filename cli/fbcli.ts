@@ -52,9 +52,10 @@ function loadAssets(): PageAsset[] {
     die(`Config not found: ${ENV_PATH}\nCreate .env with FACEBOOK_ASSETS in the fbcli directory.`);
   }
   const text = readFileSync(ENV_PATH, "utf-8");
-  const match = text.match(/^FACEBOOK_ASSETS\s*=\s*'(.+)'$/m)
-    ?? text.match(/^FACEBOOK_ASSETS\s*=\s*"(.+)"$/m)
-    ?? text.match(/^FACEBOOK_ASSETS\s*=\s*(.+)$/m);
+  const match =
+    text.match(/^FACEBOOK_ASSETS\s*=\s*'(.+)'$/m) ??
+    text.match(/^FACEBOOK_ASSETS\s*=\s*"(.+)"$/m) ??
+    text.match(/^FACEBOOK_ASSETS\s*=\s*(.+)$/m);
   if (!match) die("FACEBOOK_ASSETS not found in " + ENV_PATH);
   try {
     return JSON.parse(match[1]);
@@ -90,7 +91,7 @@ async function graphApi(
   endpoint: string,
   token: string,
   params?: Record<string, string>,
-  body?: Record<string, unknown>
+  body?: Record<string, unknown>,
 ): Promise<unknown> {
   const url = new URL(`${GRAPH_API_BASE}/${endpoint}`);
   url.searchParams.set("access_token", token);
@@ -124,10 +125,7 @@ interface BatchResponse {
   body: any;
 }
 
-async function graphApiBatch(
-  token: string,
-  requests: BatchRequest[]
-): Promise<BatchResponse[]> {
+async function graphApiBatch(token: string, requests: BatchRequest[]): Promise<BatchResponse[]> {
   if (requests.length === 0) return [];
 
   const results: BatchResponse[] = [];
@@ -228,7 +226,9 @@ function isUrl(str: string): boolean {
   return str.startsWith("http://") || str.startsWith("https://");
 }
 
-async function readLocalFile(path: string): Promise<{ data: Uint8Array; size: number; name: string }> {
+async function readLocalFile(
+  path: string,
+): Promise<{ data: Uint8Array; size: number; name: string }> {
   const file = Bun.file(path);
   if (!(await file.exists())) die(`File not found: ${path}`);
   const data = new Uint8Array(await file.arrayBuffer());
@@ -278,7 +278,11 @@ async function resolveIds(arg: string | undefined): Promise<string> {
   const stdin = await readStdin();
   if (!stdin) die("No IDs provided via argument or stdin.");
   // Normalize: split on commas and newlines, filter blanks, rejoin
-  return stdin.split(/[,\n]+/).map(s => s.trim()).filter(Boolean).join(",");
+  return stdin
+    .split(/[,\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(",");
 }
 
 // --- Commands ---
@@ -289,27 +293,33 @@ async function cmdPages(assets: PageAsset[]) {
       page_name: a.page_name,
       display_name: a.display_name,
       fb_page_id: a.fb_page_id,
-    }))
+    })),
   );
 }
 
 async function cmdPosts(page: PageAsset) {
-  out(await graphApi("GET", `${page.fb_page_id}/posts`, page.page_access_token, {
-    fields: "id,message,created_time",
-  }));
+  out(
+    await graphApi("GET", `${page.fb_page_id}/posts`, page.page_access_token, {
+      fields: "id,message,created_time",
+    }),
+  );
 }
 
 async function cmdPost(page: PageAsset, message: string) {
-  out(await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, {
-    message,
-  }));
+  out(
+    await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, {
+      message,
+    }),
+  );
 }
 
 async function cmdPostImage(page: PageAsset, imageUrl: string, caption: string) {
-  out(await graphApi("POST", `${page.fb_page_id}/photos`, page.page_access_token, {
-    url: imageUrl,
-    caption,
-  }));
+  out(
+    await graphApi("POST", `${page.fb_page_id}/photos`, page.page_access_token, {
+      url: imageUrl,
+      caption,
+    }),
+  );
 }
 
 async function cmdUpdatePost(page: PageAsset, postId: string, message: string) {
@@ -321,23 +331,29 @@ async function cmdDeletePost(page: PageAsset, postId: string) {
 }
 
 async function cmdSchedule(page: PageAsset, message: string, timestamp: string) {
-  out(await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, {
-    message,
-    published: "false",
-    scheduled_publish_time: timestamp,
-  }));
+  out(
+    await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, {
+      message,
+      published: "false",
+      scheduled_publish_time: timestamp,
+    }),
+  );
 }
 
 async function cmdComments(page: PageAsset, postId: string) {
-  out(await graphApi("GET", `${postId}/comments`, page.page_access_token, {
-    fields: "id,message,from,created_time",
-  }));
+  out(
+    await graphApi("GET", `${postId}/comments`, page.page_access_token, {
+      fields: "id,message,from,created_time",
+    }),
+  );
 }
 
 async function cmdReply(page: PageAsset, commentId: string, message: string) {
-  out(await graphApi("POST", `${commentId}/comments`, page.page_access_token, {
-    message,
-  }));
+  out(
+    await graphApi("POST", `${commentId}/comments`, page.page_access_token, {
+      message,
+    }),
+  );
 }
 
 async function cmdDeleteComment(page: PageAsset, commentId: string) {
@@ -345,19 +361,26 @@ async function cmdDeleteComment(page: PageAsset, commentId: string) {
 }
 
 async function cmdHideComment(page: PageAsset, commentId: string) {
-  out(await graphApi("POST", commentId, page.page_access_token, {
-    is_hidden: "true",
-  }));
+  out(
+    await graphApi("POST", commentId, page.page_access_token, {
+      is_hidden: "true",
+    }),
+  );
 }
 
 async function cmdUnhideComment(page: PageAsset, commentId: string) {
-  out(await graphApi("POST", commentId, page.page_access_token, {
-    is_hidden: "false",
-  }));
+  out(
+    await graphApi("POST", commentId, page.page_access_token, {
+      is_hidden: "false",
+    }),
+  );
 }
 
 async function cmdBulkDelete(page: PageAsset, ids: string) {
-  const commentIds = ids.split(",").map((s) => s.trim()).filter(Boolean);
+  const commentIds = ids
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const requests = commentIds.map((cid) => ({
     method: "DELETE",
     relative_url: cid,
@@ -373,7 +396,10 @@ async function cmdBulkDelete(page: PageAsset, ids: string) {
 }
 
 async function cmdBulkHide(page: PageAsset, ids: string) {
-  const commentIds = ids.split(",").map((s) => s.trim()).filter(Boolean);
+  const commentIds = ids
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const requests = commentIds.map((cid) => ({
     method: "POST",
     relative_url: cid,
@@ -404,10 +430,12 @@ async function cmdInsights(page: PageAsset, postId: string) {
     "post_reactions_sorry_total",
     "post_reactions_anger_total",
   ];
-  out(await graphApi("GET", `${postId}/insights`, page.page_access_token, {
-    metric: metrics.join(","),
-    period: "lifetime",
-  }));
+  out(
+    await graphApi("GET", `${postId}/insights`, page.page_access_token, {
+      metric: metrics.join(","),
+      period: "lifetime",
+    }),
+  );
 }
 
 async function cmdFans(page: PageAsset) {
@@ -452,31 +480,39 @@ async function cmdReactions(page: PageAsset, postId: string) {
 }
 
 async function cmdImpressions(page: PageAsset, postId: string) {
-  out(await graphApi("GET", `${postId}/insights`, page.page_access_token, {
-    metric: "post_impressions",
-    period: "lifetime",
-  }));
+  out(
+    await graphApi("GET", `${postId}/insights`, page.page_access_token, {
+      metric: "post_impressions",
+      period: "lifetime",
+    }),
+  );
 }
 
 async function cmdReach(page: PageAsset, postId: string) {
-  out(await graphApi("GET", `${postId}/insights`, page.page_access_token, {
-    metric: "post_impressions_unique",
-    period: "lifetime",
-  }));
+  out(
+    await graphApi("GET", `${postId}/insights`, page.page_access_token, {
+      metric: "post_impressions_unique",
+      period: "lifetime",
+    }),
+  );
 }
 
 async function cmdClicks(page: PageAsset, postId: string) {
-  out(await graphApi("GET", `${postId}/insights`, page.page_access_token, {
-    metric: "post_clicks",
-    period: "lifetime",
-  }));
+  out(
+    await graphApi("GET", `${postId}/insights`, page.page_access_token, {
+      metric: "post_clicks",
+      period: "lifetime",
+    }),
+  );
 }
 
 async function cmdEngaged(page: PageAsset, postId: string) {
-  out(await graphApi("GET", `${postId}/insights`, page.page_access_token, {
-    metric: "post_engaged_users",
-    period: "lifetime",
-  }));
+  out(
+    await graphApi("GET", `${postId}/insights`, page.page_access_token, {
+      metric: "post_engaged_users",
+      period: "lifetime",
+    }),
+  );
 }
 
 async function cmdTopCommenters(page: PageAsset, postId: string) {
@@ -507,20 +543,28 @@ async function cmdDm(page: PageAsset, userId: string, message: string) {
       recipient: { id: userId },
       message: { text: message },
       messaging_type: "RESPONSE",
-    })
+    }),
   );
 }
 
 // --- Video Commands ---
 
-async function cmdPublishReel(page: PageAsset, source: string, description?: string, title?: string) {
+async function cmdPublishReel(
+  page: PageAsset,
+  source: string,
+  description?: string,
+  title?: string,
+) {
   const token = page.page_access_token;
   // Step 1: Init
   debug("reel", "init", page.fb_page_id);
   const init = (await graphApi("POST", `${page.fb_page_id}/video_reels`, token, {
     upload_phase: "start",
   })) as Record<string, any>;
-  if (isError(init)) { out({ step: "init", ...init }); return; }
+  if (isError(init)) {
+    out({ step: "init", ...init });
+    return;
+  }
   const videoId = init.video_id;
 
   // Step 2: Upload
@@ -530,12 +574,20 @@ async function cmdPublishReel(page: PageAsset, source: string, description?: str
     upload = await ruploadApi(videoId, token, { file_url: source });
   } else {
     const { data, size } = await readLocalFile(source);
-    upload = await ruploadApi(videoId, token, {
-      offset: "0",
-      file_size: String(size),
-    }, data);
+    upload = await ruploadApi(
+      videoId,
+      token,
+      {
+        offset: "0",
+        file_size: String(size),
+      },
+      data,
+    );
   }
-  if (isError(upload)) { out({ step: "upload", video_id: videoId, ...(upload as object) }); return; }
+  if (isError(upload)) {
+    out({ step: "upload", video_id: videoId, ...(upload as object) });
+    return;
+  }
 
   // Step 3: Publish
   debug("reel", "publish", videoId);
@@ -547,7 +599,10 @@ async function cmdPublishReel(page: PageAsset, source: string, description?: str
   if (description) finishParams.description = description;
   if (title) finishParams.title = title;
   const result = await graphApi("POST", `${page.fb_page_id}/video_reels`, token, finishParams);
-  if (isError(result)) { out({ step: "publish", video_id: videoId, ...(result as object) }); return; }
+  if (isError(result)) {
+    out({ step: "publish", video_id: videoId, ...(result as object) });
+    return;
+  }
   out(result);
 }
 
@@ -565,7 +620,10 @@ async function cmdVideoStory(page: PageAsset, source: string) {
   const init = (await graphApi("POST", `${page.fb_page_id}/video_stories`, token, {
     upload_phase: "start",
   })) as Record<string, any>;
-  if (isError(init)) { out({ step: "init", ...init }); return; }
+  if (isError(init)) {
+    out({ step: "init", ...init });
+    return;
+  }
   const videoId = init.video_id;
 
   debug("video-story", "upload", videoId);
@@ -574,19 +632,30 @@ async function cmdVideoStory(page: PageAsset, source: string) {
     upload = await ruploadApi(videoId, token, { file_url: source });
   } else {
     const { data, size } = await readLocalFile(source);
-    upload = await ruploadApi(videoId, token, {
-      offset: "0",
-      file_size: String(size),
-    }, data);
+    upload = await ruploadApi(
+      videoId,
+      token,
+      {
+        offset: "0",
+        file_size: String(size),
+      },
+      data,
+    );
   }
-  if (isError(upload)) { out({ step: "upload", video_id: videoId, ...(upload as object) }); return; }
+  if (isError(upload)) {
+    out({ step: "upload", video_id: videoId, ...(upload as object) });
+    return;
+  }
 
   debug("video-story", "publish", videoId);
   const result = await graphApi("POST", `${page.fb_page_id}/video_stories`, token, {
     upload_phase: "finish",
     video_id: videoId,
   });
-  if (isError(result)) { out({ step: "publish", video_id: videoId, ...(result as object) }); return; }
+  if (isError(result)) {
+    out({ step: "publish", video_id: videoId, ...(result as object) });
+    return;
+  }
   out(result);
 }
 
@@ -597,14 +666,20 @@ async function cmdPhotoStory(page: PageAsset, photoUrl: string) {
     url: photoUrl,
     published: "false",
   })) as Record<string, any>;
-  if (isError(upload)) { out({ step: "upload", ...upload }); return; }
+  if (isError(upload)) {
+    out({ step: "upload", ...upload });
+    return;
+  }
   const photoId = upload.id;
 
   debug("photo-story", "publish", photoId);
   const result = await graphApi("POST", `${page.fb_page_id}/photo_stories`, token, {
     photo_id: photoId,
   });
-  if (isError(result)) { out({ step: "publish", photo_id: photoId, ...(result as object) }); return; }
+  if (isError(result)) {
+    out({ step: "publish", photo_id: photoId, ...(result as object) });
+    return;
+  }
   out(result);
 }
 
@@ -612,17 +687,29 @@ async function cmdStories(page: PageAsset) {
   out(await graphApi("GET", `${page.fb_page_id}/stories`, page.page_access_token));
 }
 
-async function cmdSlideshow(page: PageAsset, imageUrls: string[], durationMs: number, transitionMs: number) {
-  out(await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, {
-    slideshow_spec: JSON.stringify({
-      images_urls: imageUrls,
-      duration_ms: durationMs,
-      transition_ms: transitionMs,
+async function cmdSlideshow(
+  page: PageAsset,
+  imageUrls: string[],
+  durationMs: number,
+  transitionMs: number,
+) {
+  out(
+    await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, {
+      slideshow_spec: JSON.stringify({
+        images_urls: imageUrls,
+        duration_ms: durationMs,
+        transition_ms: transitionMs,
+      }),
     }),
-  }));
+  );
 }
 
-async function cmdPublishVideo(page: PageAsset, source: string, title?: string, description?: string) {
+async function cmdPublishVideo(
+  page: PageAsset,
+  source: string,
+  title?: string,
+  description?: string,
+) {
   const token = page.page_access_token;
   if (isUrl(source)) {
     const params: Record<string, string> = { file_url: source };
@@ -635,7 +722,14 @@ async function cmdPublishVideo(page: PageAsset, source: string, title?: string, 
       die("Local file upload requires FB_APP_ID and FB_USER_ACCESS_TOKEN in .env");
     }
     const { data, size, name } = await readLocalFile(source);
-    const handle = await resumableUpload(config.appId, config.userToken, data, name, size, "video/mp4");
+    const handle = await resumableUpload(
+      config.appId,
+      config.userToken,
+      data,
+      name,
+      size,
+      "video/mp4",
+    );
     const params: Record<string, string> = { file_url: handle };
     if (title) params.title = title;
     if (description) params.description = description;
@@ -653,25 +747,33 @@ async function cmdMusic(type: string, countries?: string) {
 }
 
 async function cmdCrosspost(page: PageAsset, videoId: string) {
-  out(await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, {
-    crossposted_video_id: videoId,
-  }));
+  out(
+    await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, {
+      crossposted_video_id: videoId,
+    }),
+  );
 }
 
 async function cmdEnableCrosspost(page: PageAsset, videoId: string, targetPageIds: string[]) {
-  out(await graphApi("POST", videoId, page.page_access_token, undefined, {
-    allow_crossposting_for_pages: targetPageIds,
-  }));
+  out(
+    await graphApi("POST", videoId, page.page_access_token, undefined, {
+      allow_crossposting_for_pages: targetPageIds,
+    }),
+  );
 }
 
 async function cmdCrosspostPages(page: PageAsset) {
-  out(await graphApi("GET", `${page.fb_page_id}/crosspost_whitelisted_pages`, page.page_access_token));
+  out(
+    await graphApi("GET", `${page.fb_page_id}/crosspost_whitelisted_pages`, page.page_access_token),
+  );
 }
 
 async function cmdCrosspostCheck(page: PageAsset, videoId: string) {
-  out(await graphApi("GET", videoId, page.page_access_token, {
-    fields: "is_crossposting_eligible",
-  }));
+  out(
+    await graphApi("GET", videoId, page.page_access_token, {
+      fields: "is_crossposting_eligible",
+    }),
+  );
 }
 
 async function cmdAbCreate(
@@ -691,7 +793,9 @@ async function cmdAbCreate(
   };
   if (description) body.description = description;
   if (durationSeconds) body.duration_seconds = durationSeconds;
-  out(await graphApi("POST", `${page.fb_page_id}/ab_tests`, page.page_access_token, undefined, body));
+  out(
+    await graphApi("POST", `${page.fb_page_id}/ab_tests`, page.page_access_token, undefined, body),
+  );
 }
 
 async function cmdAbResults(page: PageAsset, testId: string) {
@@ -940,7 +1044,12 @@ async function main() {
     return;
   }
 
-  if (command === "page-insights" || command === "post-local" || command === "draft" || command === "me") {
+  if (
+    command === "page-insights" ||
+    command === "post-local" ||
+    command === "draft" ||
+    command === "me"
+  ) {
     out(await handlePagesPlusCommand(command, rest, runtime));
     return;
   }
@@ -986,7 +1095,7 @@ async function main() {
       requireArgs(rest, 2, "post-image <page> <url> [caption]  (or pipe caption via stdin)");
       const caption = await resolveText(
         cmdArgs.length > 1 ? cmdArgs.slice(1).join(" ") : undefined,
-        "caption"
+        "caption",
       );
       return cmdPostImage(getPage(assets, pageName), cmdArgs[0], caption);
     }
@@ -994,7 +1103,7 @@ async function main() {
       requireArgs(rest, 2, "update-post <page> <post_id> [message]  (or pipe message via stdin)");
       const msg = await resolveText(
         cmdArgs.length > 1 ? cmdArgs.slice(1).join(" ") : undefined,
-        "message"
+        "message",
       );
       return cmdUpdatePost(getPage(assets, pageName), cmdArgs[0], msg);
     }
@@ -1012,11 +1121,7 @@ async function main() {
         return cmdSchedule(getPage(assets, pageName), msg, lastArg);
       }
       // Multiple args: last is timestamp, rest is message
-      return cmdSchedule(
-        getPage(assets, pageName),
-        cmdArgs.slice(0, -1).join(" "),
-        lastArg
-      );
+      return cmdSchedule(getPage(assets, pageName), cmdArgs.slice(0, -1).join(" "), lastArg);
     }
 
     // Comments
@@ -1027,7 +1132,7 @@ async function main() {
       requireArgs(rest, 2, "reply <page> <comment_id> [message]  (or pipe message via stdin)");
       const msg = await resolveText(
         cmdArgs.length > 1 ? cmdArgs.slice(1).join(" ") : undefined,
-        "message"
+        "message",
       );
       return cmdReply(getPage(assets, pageName), cmdArgs[0], msg);
     }
@@ -1091,7 +1196,7 @@ async function main() {
       requireArgs(rest, 2, "dm <page> <user_id> [message]  (or pipe message via stdin)");
       const msg = await resolveText(
         cmdArgs.length > 1 ? cmdArgs.slice(1).join(" ") : undefined,
-        "message"
+        "message",
       );
       return cmdDm(getPage(assets, pageName), cmdArgs[0], msg);
     }
@@ -1140,15 +1245,22 @@ async function main() {
       if (cmdArgs[0] === "-" || (!cmdArgs[0] && !process.stdin.isTTY)) {
         const stdin = await readStdin();
         if (!stdin) die("No image URLs provided via argument or stdin.");
-        urls = stdin.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+        urls = stdin
+          .split(/[,\n]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
       } else {
-        urls = cmdArgs[0].split(",").map(s => s.trim()).filter(Boolean);
+        urls = cmdArgs[0]
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
       if (urls.length < 3 || urls.length > 7) die("Slideshow requires 3-7 image URLs.");
       const durIdx = cmdArgs.indexOf("--duration");
       const transIdx = cmdArgs.indexOf("--transition");
       const duration = durIdx !== -1 && cmdArgs[durIdx + 1] ? parseInt(cmdArgs[durIdx + 1]) : 1750;
-      const transition = transIdx !== -1 && cmdArgs[transIdx + 1] ? parseInt(cmdArgs[transIdx + 1]) : 250;
+      const transition =
+        transIdx !== -1 && cmdArgs[transIdx + 1] ? parseInt(cmdArgs[transIdx + 1]) : 250;
       return cmdSlideshow(getPage(assets, pageName), urls, duration, transition);
     }
 
@@ -1158,7 +1270,10 @@ async function main() {
       return cmdCrosspost(getPage(assets, pageName), cmdArgs[0]);
     case "enable-crosspost": {
       requireArgs(rest, 3, "enable-crosspost <page> <video_id> <page_ids,...>");
-      const targetIds = cmdArgs[1].split(",").map(s => s.trim()).filter(Boolean);
+      const targetIds = cmdArgs[1]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
       return cmdEnableCrosspost(getPage(assets, pageName), cmdArgs[0], targetIds);
     }
     case "crosspost-pages":
@@ -1173,13 +1288,25 @@ async function main() {
       requireArgs(rest, 5, "ab-create <page> <name> <goal> <video_ids,...> <control_id>");
       const name = cmdArgs[0];
       const goal = cmdArgs[1];
-      const experimentIds = cmdArgs[2].split(",").map(s => s.trim()).filter(Boolean);
+      const experimentIds = cmdArgs[2]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
       const controlId = cmdArgs[3];
       const descIdx = cmdArgs.indexOf("--desc");
       const desc = descIdx !== -1 && cmdArgs[descIdx + 1] ? cmdArgs[descIdx + 1] : undefined;
       const durIdx = cmdArgs.indexOf("--duration");
-      const duration = durIdx !== -1 && cmdArgs[durIdx + 1] ? parseInt(cmdArgs[durIdx + 1]) : undefined;
-      return cmdAbCreate(getPage(assets, pageName), name, goal, experimentIds, controlId, desc, duration);
+      const duration =
+        durIdx !== -1 && cmdArgs[durIdx + 1] ? parseInt(cmdArgs[durIdx + 1]) : undefined;
+      return cmdAbCreate(
+        getPage(assets, pageName),
+        name,
+        goal,
+        experimentIds,
+        controlId,
+        desc,
+        duration,
+      );
     }
     case "ab-results":
       requireArgs(rest, 2, "ab-results <page> <test_id>");

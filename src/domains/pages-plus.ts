@@ -49,7 +49,7 @@ export const createDraftPost = (
     message,
     published: "false",
     unpublished_content_type: "DRAFT",
-    ...(params ?? {}),
+    ...params,
   });
 
 export const getMe = (deps: Deps, token: string, params?: Record<string, string>) =>

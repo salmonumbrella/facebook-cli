@@ -11,35 +11,71 @@ export interface Deps {
 export const listAdAccounts = (deps: Deps, token: string, params?: Record<string, string>) =>
   deps.graphApi("GET", "me/adaccounts", token, params);
 
-export const getAdAccount = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `act_${accountId}`, token, params);
+export const getAdAccount = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `act_${accountId}`, token, params);
 
-export const listCampaigns = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `act_${accountId}/campaigns`, token, params);
+export const listCampaigns = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `act_${accountId}/campaigns`, token, params);
 
-export const getCampaign = (deps: Deps, campaignId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", campaignId, token, params);
+export const getCampaign = (
+  deps: Deps,
+  campaignId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", campaignId, token, params);
 
-export const listAdSets = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `act_${accountId}/adsets`, token, params);
+export const listAdSets = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `act_${accountId}/adsets`, token, params);
 
-export const getAdSet = (deps: Deps, adSetId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", adSetId, token, params);
+export const getAdSet = (
+  deps: Deps,
+  adSetId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", adSetId, token, params);
 
-export const listAds = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `act_${accountId}/ads`, token, params);
+export const listAds = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `act_${accountId}/ads`, token, params);
 
 export const getAd = (deps: Deps, adId: string, token: string, params?: Record<string, string>) =>
   deps.graphApi("GET", adId, token, params);
 
-export const listCreatives = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `act_${accountId}/adcreatives`, token, params);
+export const listCreatives = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `act_${accountId}/adcreatives`, token, params);
 
-export const getCreative = (deps: Deps, creativeId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", creativeId, token, params);
+export const getCreative = (
+  deps: Deps,
+  creativeId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", creativeId, token, params);
 
-export const getInsights = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `act_${accountId}/insights`, token, params);
+export const getInsights = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `act_${accountId}/insights`, token, params);
 
 export async function getInsightsWithBreakdowns(
   deps: Deps,
@@ -66,11 +102,19 @@ export async function getInsightsWithBreakdowns(
   };
 }
 
-export const listAudiences = (deps: Deps, accountId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", `act_${accountId}/customaudiences`, token, params);
+export const listAudiences = (
+  deps: Deps,
+  accountId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", `act_${accountId}/customaudiences`, token, params);
 
-export const getAudience = (deps: Deps, audienceId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", audienceId, token, params);
+export const getAudience = (
+  deps: Deps,
+  audienceId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", audienceId, token, params);
 
 // Audience interest search — GET /search?type=adinterest&q=...
 export const searchInterests = (deps: Deps, token: string, query: string, limit = 25) =>
@@ -108,8 +152,12 @@ export const createCampaign = (
   payload: Record<string, unknown>,
 ) => deps.graphApi("POST", `act_${accountId}/campaigns`, token, payload as any);
 
-export const updateCampaign = (deps: Deps, campaignId: string, token: string, payload: Record<string, unknown>) =>
-  deps.graphApi("POST", campaignId, token, payload as any);
+export const updateCampaign = (
+  deps: Deps,
+  campaignId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", campaignId, token, payload as any);
 
 export const pauseCampaign = (deps: Deps, campaignId: string, token: string) =>
   deps.graphApi("POST", campaignId, token, { status: "PAUSED" } as any);
@@ -127,8 +175,12 @@ export const createAdSet = (
   payload: Record<string, unknown>,
 ) => deps.graphApi("POST", `act_${accountId}/adsets`, token, payload as any);
 
-export const updateAdSet = (deps: Deps, adSetId: string, token: string, payload: Record<string, unknown>) =>
-  deps.graphApi("POST", adSetId, token, payload as any);
+export const updateAdSet = (
+  deps: Deps,
+  adSetId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", adSetId, token, payload as any);
 
 export const createAd = (
   deps: Deps,
@@ -137,8 +189,12 @@ export const createAd = (
   payload: Record<string, unknown>,
 ) => deps.graphApi("POST", `act_${accountId}/ads`, token, payload as any);
 
-export const updateAd = (deps: Deps, adId: string, token: string, payload: Record<string, unknown>) =>
-  deps.graphApi("POST", adId, token, payload as any);
+export const updateAd = (
+  deps: Deps,
+  adId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", adId, token, payload as any);
 
 export const createCreative = (
   deps: Deps,
@@ -161,8 +217,12 @@ export const createAudience = (
   payload: Record<string, unknown>,
 ) => deps.graphApi("POST", `act_${accountId}/customaudiences`, token, payload as any);
 
-export const updateAudience = (deps: Deps, audienceId: string, token: string, payload: Record<string, unknown>) =>
-  deps.graphApi("POST", audienceId, token, payload as any);
+export const updateAudience = (
+  deps: Deps,
+  audienceId: string,
+  token: string,
+  payload: Record<string, unknown>,
+) => deps.graphApi("POST", audienceId, token, payload as any);
 
 export const deleteAudience = (deps: Deps, audienceId: string, token: string) =>
   deps.graphApi("DELETE", audienceId, token);
@@ -182,7 +242,9 @@ export async function duplicateCampaign(
   const accountPath = accountId.startsWith("act_") ? accountId : `act_${accountId}`;
   const sourceCampaign = await deps.graphApi("GET", campaignId, token);
   const adSetsRes = await deps.graphApi("GET", `${campaignId}/adsets`, token);
-  const sourceAdSets: Array<Record<string, unknown>> = Array.isArray(adSetsRes?.data) ? adSetsRes.data : [];
+  const sourceAdSets: Array<Record<string, unknown>> = Array.isArray(adSetsRes?.data)
+    ? adSetsRes.data
+    : [];
 
   const adsByAdSet = new Map<string, Array<Record<string, unknown>>>();
   for (const adSet of sourceAdSets) {
@@ -197,11 +259,20 @@ export async function duplicateCampaign(
   const scaledBudget = baseBudget > 0 ? Math.round(baseBudget * budgetFactor) : undefined;
   const newCampaignPayload: Record<string, string> = {
     ...(sourceCampaign?.objective ? { objective: String(sourceCampaign.objective) } : {}),
-    ...(options.name ? { name: options.name } : sourceCampaign?.name ? { name: String(sourceCampaign.name) } : {}),
+    ...(options.name
+      ? { name: options.name }
+      : sourceCampaign?.name
+        ? { name: String(sourceCampaign.name) }
+        : {}),
     ...(scaledBudget ? { daily_budget: String(scaledBudget) } : {}),
     status: "PAUSED",
   };
-  const newCampaign = await deps.graphApi("POST", `${accountPath}/campaigns`, token, newCampaignPayload);
+  const newCampaign = await deps.graphApi(
+    "POST",
+    `${accountPath}/campaigns`,
+    token,
+    newCampaignPayload,
+  );
 
   const adSetMap = new Map<string, string>();
   for (const adSet of sourceAdSets) {

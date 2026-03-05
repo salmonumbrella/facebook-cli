@@ -8,8 +8,12 @@ export interface Deps {
   ) => Promise<any>;
 }
 
-export const getBusinessInfo = (deps: Deps, businessId: string, token: string, params?: Record<string, string>) =>
-  deps.graphApi("GET", businessId, token, params);
+export const getBusinessInfo = (
+  deps: Deps,
+  businessId: string,
+  token: string,
+  params?: Record<string, string>,
+) => deps.graphApi("GET", businessId, token, params);
 
 export const listBusinessAdAccounts = (
   deps: Deps,
@@ -27,7 +31,7 @@ export const listInvoices = (
   params?: Record<string, string>,
 ) =>
   deps.graphApi("GET", `${businessId}/business_invoices`, token, {
-    ...(params ?? {}),
+    ...params,
     ...(startDate ? { start_date: startDate } : {}),
     ...(endDate ? { end_date: endDate } : {}),
   });
@@ -46,8 +50,5 @@ export async function downloadInvoicePdf(
   return res.arrayBuffer();
 }
 
-export const searchAdLibrary = (
-  deps: Deps,
-  token: string,
-  params: Record<string, string>,
-) => deps.graphApi("GET", "ads_archive", token, params);
+export const searchAdLibrary = (deps: Deps, token: string, params: Record<string, string>) =>
+  deps.graphApi("GET", "ads_archive", token, params);

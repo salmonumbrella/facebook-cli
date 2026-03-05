@@ -3,16 +3,12 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": [
-      "bun-types"
-    ],
+    "types": ["bun-types"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "*.ts"
-  ]
+  "include": ["*.ts"]
 }

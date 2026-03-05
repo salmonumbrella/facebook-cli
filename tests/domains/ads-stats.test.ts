@@ -4,15 +4,30 @@ import { collectStats, analyzeStats } from "../../src/domains/ads-stats.js";
 describe("ads stats", () => {
   it("collects daily insights and stores as JSON", async () => {
     const graphApi = mock(async () => ({
-      data: [{
-        campaign_id: "123", campaign_name: "Test",
-        impressions: "10000", clicks: "500", spend: "100.50",
-        ctr: "0.05", cpm: "10.05", cpc: "0.201",
-        date_start: "2026-03-01", date_stop: "2026-03-01",
-      }],
+      data: [
+        {
+          campaign_id: "123",
+          campaign_name: "Test",
+          impressions: "10000",
+          clicks: "500",
+          spend: "100.50",
+          ctr: "0.05",
+          cpm: "10.05",
+          cpc: "0.201",
+          date_start: "2026-03-01",
+          date_stop: "2026-03-01",
+        },
+      ],
     }));
 
-    const result = await collectStats({ graphApi } as any, "act_123", "TOKEN", "2026-03-01", "2026-03-01", "/tmp/fb-stats-test");
+    const result = await collectStats(
+      { graphApi } as any,
+      "act_123",
+      "TOKEN",
+      "2026-03-01",
+      "2026-03-01",
+      "/tmp/fb-stats-test",
+    );
     expect(result.campaigns).toBe(1);
     expect(result.dataPoints).toBeGreaterThan(0);
   });

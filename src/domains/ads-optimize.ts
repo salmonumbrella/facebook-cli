@@ -103,7 +103,11 @@ export async function createTestCampaigns(
   if (!validation.valid) return { ok: false, validation };
 
   const combos = generateCombinations(config);
-  const prioritized = options.priority ? combos.sort((a, b) => Number(b.kind === options.priority) - Number(a.kind === options.priority)) : combos;
+  const prioritized = options.priority
+    ? combos.sort(
+        (a, b) => Number(b.kind === options.priority) - Number(a.kind === options.priority),
+      )
+    : combos;
   const selected = options.limit ? prioritized.slice(0, options.limit) : prioritized;
 
   const budget = allocateBudget(
@@ -128,7 +132,9 @@ export async function createTestCampaigns(
         status: "PAUSED",
         daily_budget: String(Math.max(1, Math.round(budget.perCampaign))),
       };
-      created.push(await deps.graphApi("POST", `${accountPath(accountId)}/campaigns`, token, payload));
+      created.push(
+        await deps.graphApi("POST", `${accountPath(accountId)}/campaigns`, token, payload),
+      );
     }
     const delay = 300 * 2 ** Math.floor(i / Math.max(1, batchSize)) + jitter();
     await sleep(delay);
@@ -174,7 +180,10 @@ export async function updateCpmBids(
 ) {
   const stats: Array<{ campaignId: string; cpm: number; impressions: number }> = [];
   for (const campaignId of campaignIds) {
-    const res = await deps.graphApi("GET", `${campaignId}/insights`, token, { fields: "cpm,impressions", limit: "1" });
+    const res = await deps.graphApi("GET", `${campaignId}/insights`, token, {
+      fields: "cpm,impressions",
+      limit: "1",
+    });
     const row = Array.isArray(res?.data) ? res.data[0] : undefined;
     stats.push({
       campaignId,
@@ -195,7 +204,11 @@ export async function updateCpmBids(
       updates.push(await deps.graphApi("POST", s.campaignId, token, { status: "PAUSED" }));
       continue;
     }
-    updates.push(await deps.graphApi("POST", s.campaignId, token, { bid_amount: String(Math.round(cap * 100)) }));
+    updates.push(
+      await deps.graphApi("POST", s.campaignId, token, {
+        bid_amount: String(Math.round(cap * 100)),
+      }),
+    );
   }
 
   return { cap, updated: updates.length };

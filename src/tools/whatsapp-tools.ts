@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { createWaTemplate, listWaPhoneNumbers, listWaTemplates, sendWaMessage } from "../domains/whatsapp.js";
+import {
+  createWaTemplate,
+  listWaPhoneNumbers,
+  listWaTemplates,
+  sendWaMessage,
+} from "../domains/whatsapp.js";
 
 type GraphFn = (
   method: string,

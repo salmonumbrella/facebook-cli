@@ -55,7 +55,7 @@ async function fetchPages(userToken: string): Promise<FBPage[]> {
   url.searchParams.set("limit", "100");
 
   const res = await fetch(url.toString());
-  const data = await res.json() as any;
+  const data = (await res.json()) as any;
 
   if (data.error) {
     die(`API Error: ${data.error.message}`);

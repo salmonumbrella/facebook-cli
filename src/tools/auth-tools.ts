@@ -32,9 +32,11 @@ export function registerAuthTools(server: ToolServerLike): void {
       profile_path: z.string().optional(),
     },
     async ({ access_token, profile, profile_path }) => {
-      const store = createProfileStore(profilePath(profile_path ? String(profile_path) : undefined));
+      const store = createProfileStore(
+        profilePath(profile_path ? String(profile_path) : undefined),
+      );
       const data = store.load();
-      const profileName = profile ? String(profile) : data.active ?? "default";
+      const profileName = profile ? String(profile) : (data.active ?? "default");
       const record = data.profiles[profileName] ?? {};
       const token = resolveAccessToken(
         access_token ? String(access_token) : undefined,
@@ -85,7 +87,9 @@ export function registerAuthTools(server: ToolServerLike): void {
     "List available profiles and active profile.",
     { profile_path: z.string().optional() },
     async ({ profile_path }) => {
-      const store = createProfileStore(profilePath(profile_path ? String(profile_path) : undefined));
+      const store = createProfileStore(
+        profilePath(profile_path ? String(profile_path) : undefined),
+      );
       const data = store.load();
       return json({
         active: data.active,

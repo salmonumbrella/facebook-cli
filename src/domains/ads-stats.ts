@@ -87,7 +87,8 @@ export async function collectStats(
   const response = await deps.graphApi("GET", `${accountPath}/insights`, token, {
     level: "campaign",
     time_increment: "1",
-    fields: "campaign_id,campaign_name,impressions,clicks,spend,ctr,cpc,cpm,date_start,date_stop,conversions,conversion_value",
+    fields:
+      "campaign_id,campaign_name,impressions,clicks,spend,ctr,cpc,cpm,date_start,date_stop,conversions,conversion_value",
     time_range: JSON.stringify({ since: startDate, until: endDate }),
   });
 
@@ -123,7 +124,8 @@ export function analyzeStats(dataPoints: Array<Record<string, unknown>>) {
     cpc: summarize(cpc),
     cpm: summarize(cpm),
     trend: {
-      impressions: impressions.length > 1 ? impressions[impressions.length - 1] - impressions[0] : 0,
+      impressions:
+        impressions.length > 1 ? impressions[impressions.length - 1] - impressions[0] : 0,
       clicks: clicks.length > 1 ? clicks[clicks.length - 1] - clicks[0] : 0,
       spend: spend.length > 1 ? spend[spend.length - 1] - spend[0] : 0,
     },
@@ -153,9 +155,7 @@ export function validateStats(dataPoints: StatsPoint[]) {
         spend,
         runtimeHours,
       },
-      recommendation: pass
-        ? "ready_for_optimization"
-        : "collect_more_data_before_optimization",
+      recommendation: pass ? "ready_for_optimization" : "collect_more_data_before_optimization",
     };
   });
 }

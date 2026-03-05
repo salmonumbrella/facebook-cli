@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { generateCombinations, allocateBudget, validateOptimizationConfig } from "../../src/domains/ads-optimize.js";
+import {
+  generateCombinations,
+  allocateBudget,
+  validateOptimizationConfig,
+} from "../../src/domains/ads-optimize.js";
 
 describe("ads optimization engine", () => {
   it("generates creative x audience x placement combinations", () => {
