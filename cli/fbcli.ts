@@ -7,6 +7,7 @@
 
 import { readFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
+import { parseGlobalOptions, resolveRuntimeContext } from "./lib/context.js";
 
 const VERSION = "2.0.0";
 const GRAPH_API_BASE = "https://graph.facebook.com/v22.0";
@@ -863,7 +864,13 @@ CONFIG
 // --- Main ---
 
 async function main() {
-  const args = process.argv.slice(2);
+  const parsedGlobal = parseGlobalOptions(process.argv.slice(2));
+  const runtime = resolveRuntimeContext(parsedGlobal);
+  if (runtime.dryRun) process.env.FB_DRY_RUN = "1";
+  if (runtime.apiVersion) process.env.FB_API_VERSION = runtime.apiVersion;
+  if (runtime.accessToken) process.env.FB_ACCESS_TOKEN = runtime.accessToken;
+
+  const args = parsedGlobal.args;
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
     console.log(HELP);
     return;
