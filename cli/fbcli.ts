@@ -11,6 +11,7 @@ import { parseGlobalOptions, resolveRuntimeContext } from "./lib/context.js";
 import { handleAuthCommand } from "./commands/auth.js";
 import { handleProfileCommand } from "./commands/profile.js";
 import { handleLimitsCommand } from "./commands/limits.js";
+import { handleAdsCommand } from "./commands/ads.js";
 
 const VERSION = "2.0.0";
 const GRAPH_API_BASE = "https://graph.facebook.com/v22.0";
@@ -898,6 +899,11 @@ async function main() {
 
   if (command === "limits") {
     out(await handleLimitsCommand(rest, runtime));
+    return;
+  }
+
+  if (command === "ads") {
+    out(await handleAdsCommand(rest, runtime));
     return;
   }
 
