@@ -23,6 +23,11 @@ interface LoginOptions {
   scopes: string[];
 }
 
+interface DoctorOptions {
+  offline: boolean;
+  scopes: string[];
+}
+
 interface OAuthCallback {
   code?: string;
   state?: string;
@@ -107,6 +112,38 @@ function parseLoginOptions(args: string[]): LoginOptions {
 
   if (out.scopes.length === 0) {
     throw new Error("No OAuth scopes configured. Use --scopes or FB_OAUTH_SCOPES.");
+  }
+
+  return out;
+}
+
+function parseDoctorOptions(args: string[]): DoctorOptions {
+  const out: DoctorOptions = {
+    offline: false,
+    scopes: defaultScopes(),
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--offline") {
+      out.offline = true;
+      continue;
+    }
+    if (arg === "--scopes") {
+      const value = args[i + 1];
+      if (!value) throw new Error("Missing value for --scopes");
+      out.scopes = normalizeScopes(value.split(","));
+      i += 1;
+      continue;
+    }
+    if (arg === "--scope") {
+      const value = args[i + 1];
+      if (!value) throw new Error("Missing value for --scope");
+      out.scopes = normalizeScopes([...out.scopes, value]);
+      i += 1;
+      continue;
+    }
+    throw new Error(`Unknown auth doctor option: ${arg}`);
   }
 
   return out;
@@ -224,6 +261,12 @@ function profileAuthData(
     app_id: typeof debugData?.app_id === "string" ? debugData.app_id : undefined,
     is_valid: typeof debugData?.is_valid === "boolean" ? debugData.is_valid : undefined,
   };
+}
+
+interface DoctorCheck {
+  name: string;
+  status: "pass" | "warn" | "fail";
+  details: string;
 }
 
 export async function handleAuthCommand(args: string[], runtime: RuntimeContext): Promise<unknown> {
@@ -384,9 +427,159 @@ export async function handleAuthCommand(args: string[], runtime: RuntimeContext)
       };
     }
 
+    case "doctor": {
+      const options = parseDoctorOptions(rest);
+      const checks: DoctorCheck[] = [];
+      const redirectUri = process.env.FB_OAUTH_REDIRECT_URI ?? "http://localhost:8484/callback";
+      const appId = process.env.FB_APP_ID;
+      const appSecret = process.env.FB_APP_SECRET;
+      const accessToken = runtime.accessToken;
+
+      const store = createProfileStore(runtime.profilePath);
+      const data = store.load();
+      const profile = data.profiles[runtime.profileName] ?? {};
+
+      checks.push({
+        name: "profile_store",
+        status: "pass",
+        details: `using ${runtime.profilePath} (active: ${runtime.profileName})`,
+      });
+
+      checks.push({
+        name: "app_id",
+        status: appId ? "pass" : "fail",
+        details: appId ? "FB_APP_ID is set" : "FB_APP_ID is missing",
+      });
+
+      checks.push({
+        name: "app_secret",
+        status: appSecret ? "pass" : "fail",
+        details: appSecret ? "FB_APP_SECRET is set" : "FB_APP_SECRET is missing",
+      });
+
+      try {
+        const url = new URL(redirectUri);
+        const schemeOk = url.protocol === "http:" || url.protocol === "https:";
+        checks.push({
+          name: "oauth_redirect_uri",
+          status: schemeOk ? "pass" : "fail",
+          details: schemeOk
+            ? `configured redirect: ${redirectUri}`
+            : `unsupported redirect scheme: ${url.protocol}`,
+        });
+      } catch {
+        checks.push({
+          name: "oauth_redirect_uri",
+          status: "fail",
+          details: `invalid URL: ${redirectUri}`,
+        });
+      }
+
+      checks.push({
+        name: "access_token",
+        status: accessToken ? "pass" : "fail",
+        details: accessToken
+          ? `token available (${tokenPreview(accessToken)})`
+          : "no token resolved from cli/env/profile",
+      });
+
+      if (accessToken) {
+        if (options.offline) {
+          checks.push({
+            name: "token_debug",
+            status: "warn",
+            details: "skipped token introspection because --offline was set",
+          });
+        } else if (!appId || !appSecret) {
+          checks.push({
+            name: "token_debug",
+            status: "warn",
+            details: "cannot debug token without FB_APP_ID and FB_APP_SECRET",
+          });
+        } else {
+          try {
+            const debug = await debugToken({
+              inputToken: accessToken,
+              appAccessToken: buildAppAccessToken(appId, appSecret),
+              version,
+            });
+            const debugData = debug?.data;
+            const isValid = Boolean(debugData?.is_valid);
+            checks.push({
+              name: "token_valid",
+              status: isValid ? "pass" : "fail",
+              details: isValid ? "token is valid" : "token is invalid",
+            });
+
+            const grantedScopes = Array.isArray(debugData?.scopes)
+              ? debugData.scopes.filter((scope: unknown) => typeof scope === "string")
+              : [];
+            const missingScopes = options.scopes.filter((scope) => !grantedScopes.includes(scope));
+            checks.push({
+              name: "token_scopes",
+              status: missingScopes.length === 0 ? "pass" : "fail",
+              details:
+                missingScopes.length === 0
+                  ? "all required scopes are present"
+                  : `missing scopes: ${missingScopes.join(", ")}`,
+            });
+
+            if (typeof debugData?.expires_at === "number") {
+              checks.push({
+                name: "token_expiry",
+                status: "pass",
+                details: `expires_at: ${new Date(debugData.expires_at * 1000).toISOString()}`,
+              });
+            }
+          } catch (error) {
+            checks.push({
+              name: "token_debug",
+              status: "fail",
+              details: `debug_token failed: ${error instanceof Error ? error.message : String(error)}`,
+            });
+          }
+        }
+      }
+
+      const failures = checks.filter((check) => check.status === "fail");
+      const warnings = checks.filter((check) => check.status === "warn");
+      const nextSteps: string[] = [];
+      if (failures.some((check) => check.name === "app_id" || check.name === "app_secret")) {
+        nextSteps.push("Set FB_APP_ID and FB_APP_SECRET in your environment or .env");
+      }
+      if (failures.some((check) => check.name === "access_token")) {
+        nextSteps.push("Run `fbcli auth login` to store a token in your active profile");
+      }
+      if (failures.some((check) => check.name === "oauth_redirect_uri")) {
+        nextSteps.push("Set FB_OAUTH_REDIRECT_URI to a valid callback URL");
+      }
+      if (failures.some((check) => check.name === "token_scopes")) {
+        nextSteps.push("Re-run `fbcli auth login --scopes ...` with required permissions");
+      }
+      if (warnings.some((check) => check.name === "token_debug")) {
+        nextSteps.push("Run `fbcli auth doctor` without --offline to verify token with Facebook");
+      }
+
+      return {
+        ok: failures.length === 0,
+        profile: runtime.profileName,
+        tokenSource: accessToken ? "cli/env/profile" : "none",
+        resolvedToken: accessToken ? tokenPreview(accessToken) : undefined,
+        requiredScopes: options.scopes,
+        storedAuth: profile.auth ?? null,
+        checks,
+        summary: {
+          pass: checks.filter((check) => check.status === "pass").length,
+          warn: warnings.length,
+          fail: failures.length,
+        },
+        nextSteps,
+      };
+    }
+
     default:
       throw new Error(
-        "Usage: fbcli auth <login|status|logout|refresh> [--scopes ...] [--redirect-uri ...]",
+        "Usage: fbcli auth <login|status|logout|refresh|doctor> [--scopes ...] [--redirect-uri ...]",
       );
   }
 }

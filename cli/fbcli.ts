@@ -835,6 +835,7 @@ COMMANDS
     auth status
     auth logout
     auth refresh
+    auth doctor [--offline] [--scopes a,b]
 
   Profiles
     profile add <name> [--access-token TOKEN]

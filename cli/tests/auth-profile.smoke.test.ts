@@ -30,6 +30,11 @@ describe("auth/profile/limits smoke", () => {
     expect(res.exitCode).toBe(0);
   });
 
+  it("runs auth doctor", () => {
+    const res = runCli(["auth", "doctor", "--offline"]);
+    expect(res.exitCode).toBe(0);
+  });
+
   it("runs limits check", () => {
     const res = runCli(["limits", "check"]);
     expect(res.exitCode).toBe(0);
