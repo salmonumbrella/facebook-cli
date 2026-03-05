@@ -10,8 +10,24 @@ export interface PageAsset {
   page_access_token: string;
 }
 
-export const GRAPH_API_VERSION = "v22.0";
-export const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+export const DEFAULT_GRAPH_API_VERSION = "v25.0";
+
+export function getGraphApiBase(
+  version = process.env.FB_API_VERSION || DEFAULT_GRAPH_API_VERSION,
+): string {
+  return `https://graph.facebook.com/${version}`;
+}
+
+export const GRAPH_API_VERSION = process.env.FB_API_VERSION || DEFAULT_GRAPH_API_VERSION;
+export const GRAPH_API_BASE = getGraphApiBase(GRAPH_API_VERSION);
+
+export function resolveAccessToken(
+  cliToken?: string,
+  envToken?: string,
+  profileToken?: string,
+): string | undefined {
+  return cliToken ?? envToken ?? profileToken;
+}
 
 export function loadAssets(): PageAsset[] {
   const raw = process.env.FACEBOOK_ASSETS ?? "[]";
