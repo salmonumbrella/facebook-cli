@@ -24,7 +24,17 @@ bun run cli/fbcli.ts pages
 bun run cli/fbcli.ts posts <page_name>
 ```
 
-There are no tests, linting, or build steps configured in this project.
+Test suite is available via Bun:
+
+```bash
+bun test
+```
+
+Full verification:
+
+```bash
+bun run verify
+```
 
 ## Environment Setup
 
@@ -49,7 +59,14 @@ FB_USER_ACCESS_TOKEN=EAA...
 - `FB_USER_ACCESS_TOKEN` — needed for Resumable Upload API init/transfer steps
 - Both are optional — URL-based uploads work with existing page tokens only
 
-Credentials come from https://developers.facebook.com/tools/explorer. The Graph API version is hardcoded to `v22.0` in `src/config.ts`.
+Credentials come from https://developers.facebook.com/tools/explorer.
+Default Graph API version is `v25.0` and can be overridden with `FB_API_VERSION` or `--api-version`.
+
+CLI runtime/profile behavior:
+- Profile store path: `~/.config/facebook-cli/profiles.json`
+- Token precedence: `--access-token` > `FB_ACCESS_TOKEN` > active profile token
+- Global flags: `--output`, `--dry-run`, `--api-version`, `--access-token`, `--profile`
+- `--dry-run` blocks non-GET writes and returns dry-run payloads from the API layer
 
 ## Architecture
 
@@ -73,7 +90,7 @@ src/config.ts
 - `resumableUpload(appId, userToken, fileData, fileName, fileSize, fileType)` — 2-step Resumable Upload API for local file uploads (init session → transfer binary → returns file handle)
 - `graphApiBatch(token, requests[])` — batch API calls (auto-chunks at 50)
 
-**src/server.ts** — Registers 53 MCP tools via `McpServer.tool()` from `@modelcontextprotocol/sdk`. Organized by section:
+**src/server.ts** — Registers tool categories via `McpServer.tool()` from `@modelcontextprotocol/sdk`. Organized by section:
 - **Pages** — list_pages
 - **Posts** — CRUD, scheduling, image posting
 - **Comments** — CRUD, hide/unhide, bulk operations, sentiment filtering
@@ -86,10 +103,17 @@ src/config.ts
 - **Music** — get_music_recommendations
 - **Crossposting** — crosspost_video, enable_crossposting, crosspost_eligible_pages, check_crosspost_eligibility
 - **A/B Testing** — create_ab_test, get_ab_test, list_ab_tests, delete_ab_test
+- **Ads** — registrations in `src/tools/ads-tools.ts`
+- **Business/Invoices** — registrations in `src/tools/business-tools.ts`
+- **Instagram** — registrations in `src/tools/instagram-tools.ts`
+- **WhatsApp** — registrations in `src/tools/whatsapp-tools.ts`
+- **Page Enhancements** — registrations in `src/tools/pages-plus-tools.ts`
+- **Auth/Profile** — registrations in `src/tools/auth-tools.ts`
 
 ### CLI (`cli/`)
 
-Self-contained standalone CLI at `cli/fbcli.ts`. Reads its own `.env` file from the cli/ directory. Uses the same Graph API patterns but is independent of the MCP server code.
+CLI entrypoint is `cli/fbcli.ts` with grouped command handlers under `cli/commands/*` and runtime parsing in `cli/lib/context.ts`.
+Major groups include `auth`, `profile`, `limits`, `ads`, `business`, `invoices`, `ad-library`, `ig`, `wa`, and `page-insights`.
 
 Commands that accept text content (messages, captions) or ID lists support **stdin fallback** — when the arg is omitted or `-`, the CLI reads from stdin. This enables Unix piping: `cat draft.txt | fbcli post mypage`. Three helpers handle this: `readStdin()` (TTY-aware), `resolveText()` (for messages), `resolveIds()` (for bulk ID lists with newline normalization).
 

@@ -136,4 +136,102 @@ FB_APP_ID=123456789                    # optional — needed for local file uplo
 FB_USER_ACCESS_TOKEN=EAA...            # optional — needed for local file uploads
 ```
 
-Graph API: v22.0
+Graph API default: `v25.0` (override with `--api-version` or `FB_API_VERSION`)
+
+## Runtime Flags (Global)
+
+Use these flags before any command group:
+
+```bash
+fbcli --output json|table|csv ...
+fbcli --dry-run ...
+fbcli --api-version v25.0 ...
+fbcli --access-token EAA...
+fbcli --profile default
+```
+
+`--dry-run` blocks non-GET mutations and returns a dry-run payload instead of sending write requests.
+
+## Auth & Profile Commands
+
+Profile storage path: `~/.config/facebook-cli/profiles.json`
+
+```bash
+fbcli auth login
+fbcli auth status
+fbcli auth logout
+fbcli auth refresh
+
+fbcli profile add <name> [--access-token EAA...]
+fbcli profile switch <name>
+fbcli profile show [name]
+fbcli profile remove <name>
+fbcli profile list
+
+fbcli limits check
+```
+
+## Ads Commands (Expanded)
+
+```bash
+fbcli ads accounts list|get
+fbcli ads campaigns list|get|create|update|pause|activate|delete
+fbcli ads adsets list|get|create|update
+fbcli ads ads list|get|create|update
+fbcli ads creatives list|get|create
+fbcli ads images upload
+fbcli ads insights get
+fbcli ads audiences list|get|create|update|delete
+fbcli ads deploy
+fbcli ads validate
+fbcli ads audience search-interests|search-behaviors|estimate-size
+fbcli ads duplicate
+fbcli ads stats collect|analyze|validate|export
+fbcli ads optimize validate|create|update
+fbcli ads exportyaml
+```
+
+## Business, Invoices, and Ad Library
+
+```bash
+fbcli business info
+fbcli business ad-accounts
+fbcli invoices list
+fbcli invoices download
+fbcli ad-library search
+```
+
+## Instagram (ig)
+
+```bash
+fbcli ig accounts list
+fbcli ig media list
+fbcli ig media insights
+fbcli ig account insights
+fbcli ig comments list
+fbcli ig comments reply
+fbcli ig publish
+fbcli ig stories list
+```
+
+## WhatsApp (wa)
+
+```bash
+fbcli wa send
+fbcli wa templates list
+fbcli wa templates create
+fbcli wa phone-numbers list
+```
+
+## Page Enhancements (page-insights)
+
+```bash
+fbcli page-insights <page_id> <metric> [period]
+fbcli page-insights fans <page_id>
+fbcli page-insights reach <page_id>
+fbcli page-insights views <page_id>
+fbcli page-insights engagement <page_id>
+fbcli post-local <page_id> <file_path> [caption]
+fbcli draft <page_id> <message>
+fbcli me
+```

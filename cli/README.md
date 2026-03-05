@@ -135,6 +135,71 @@ fbcli ab-tests <page>                        # List A/B tests
 fbcli ab-delete <page> <test_id>             # Delete A/B test
 ```
 
+## Runtime Flags and New Command Groups
+
+Global flags:
+
+```bash
+fbcli --output json|table|csv ...
+fbcli --dry-run ...
+fbcli --api-version v25.0 ...
+fbcli --access-token EAA...
+fbcli --profile default ...
+```
+
+Profile storage:
+- `~/.config/facebook-cli/profiles.json`
+
+Auth/Profile/Limits:
+
+```bash
+fbcli auth login|status|logout|refresh
+fbcli profile add|switch|show|remove|list
+fbcli limits check
+```
+
+Ads:
+
+```bash
+fbcli ads accounts list|get
+fbcli ads campaigns list|get|create|update|pause|activate|delete
+fbcli ads adsets list|get|create|update
+fbcli ads ads list|get|create|update
+fbcli ads creatives list|get|create
+fbcli ads images upload
+fbcli ads insights get
+fbcli ads audiences list|get|create|update|delete
+fbcli ads deploy
+fbcli ads validate
+fbcli ads audience search-interests|search-behaviors|estimate-size
+fbcli ads duplicate
+fbcli ads stats collect|analyze|validate|export
+fbcli ads optimize validate|create|update
+fbcli ads exportyaml
+```
+
+Business/Social:
+
+```bash
+fbcli business info|ad-accounts
+fbcli invoices list|download
+fbcli ad-library search
+fbcli ig accounts list
+fbcli ig media list|insights
+fbcli ig account insights
+fbcli ig comments list|reply
+fbcli ig publish
+fbcli ig stories list
+fbcli wa send
+fbcli wa templates list|create
+fbcli wa phone-numbers list
+fbcli page-insights <page_id> <metric> [period]
+fbcli page-insights fans|reach|views|engagement <page_id>
+fbcli post-local <page_id> <file_path> [caption]
+fbcli draft <page_id> <message>
+fbcli me
+```
+
 ## Stdin Support
 
 Commands with `[brackets]` accept input via stdin when the argument is omitted or replaced with `-`. This enables piping and composition:

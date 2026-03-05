@@ -163,6 +163,44 @@ echo "Thanks!" | fbcli reply mybusiness 123_456
 fbcli comments mybusiness 123_456 | jq -r '.data[].id' | fbcli bulk-hide mybusiness
 ```
 
+### v2 Runtime and Command Groups
+
+Global runtime flags:
+
+```bash
+fbcli --output json|table|csv ...
+fbcli --dry-run ...
+fbcli --api-version v25.0 ...
+fbcli --access-token EAA...
+fbcli --profile default ...
+```
+
+New command groups:
+- `auth` (`login`, `status`, `logout`, `refresh`)
+- `profile` (`add`, `switch`, `show`, `remove`, `list`)
+- `limits` (`check`)
+- `ads` (accounts, campaigns, adsets, ads, creatives, images, insights, audiences, deploy, validate, duplicate, stats, optimize)
+- `business`, `invoices`, `ad-library`
+- `ig`
+- `wa`
+- `page-insights`, plus `post-local`, `draft`, `me`
+
+Profile store path:
+- `~/.config/facebook-cli/profiles.json`
+
+Dry-run behavior:
+- `--dry-run` sets `FB_DRY_RUN=1` and blocks non-GET Graph mutations.
+
+### MCP Tool Categories (Expanded)
+
+The MCP server now includes categories for:
+- Ads
+- Business and invoices
+- Instagram
+- WhatsApp
+- Page enhancements
+- Auth and profile management
+
 ---
 
 ## Architecture
@@ -184,4 +222,3 @@ src/config.ts
 ### CLI (`cli/`)
 
 Self-contained single-file CLI at `cli/fbcli.ts`. Independent of the MCP server — reads its own `.env`.
-

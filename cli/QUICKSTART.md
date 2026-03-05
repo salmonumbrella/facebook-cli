@@ -117,3 +117,39 @@ fbcli comments mybusiness 123456_789 \
 # DM from a template file
 cat welcome.txt | fbcli dm mybusiness 9876543210
 ```
+
+## v2 Command Groups
+
+```bash
+# Auth and profiles
+fbcli auth status
+fbcli profile list
+fbcli profile switch default
+fbcli limits check
+
+# Ads
+fbcli ads accounts list
+fbcli ads campaigns list --account-id 123
+fbcli ads audience search-interests --query shopping
+fbcli ads stats collect --account-id 123 --since 2026-03-01 --until 2026-03-01
+
+# Business + social
+fbcli business info --business-id 123
+fbcli invoices list --business-id 123
+fbcli ad-library search --params-json '{"ad_reached_countries":"US","search_terms":"shoes"}'
+fbcli ig accounts list
+fbcli wa templates list --waba-id 123
+fbcli page-insights fans 1234567890
+```
+
+## Runtime Flags
+
+```bash
+fbcli --output table ads campaigns list --account-id 123
+fbcli --dry-run ads campaigns create --account-id 123 --payload-json '{"name":"Demo","objective":"OUTCOME_TRAFFIC","status":"PAUSED","special_ad_categories":"[]"}'
+fbcli --api-version v25.0 ads accounts list
+fbcli --access-token EAA... ads accounts list
+fbcli --profile default ads accounts list
+```
+
+Profile path: `~/.config/facebook-cli/profiles.json`
