@@ -10,6 +10,11 @@ import { z } from "zod";
 import { loadAssets, loadAppConfig, type PageAsset } from "./config.js";
 import { graphApi, graphApiBatch, ruploadApi, debug, isError } from "./api.js";
 import { registerAdsTools } from "./tools/ads-tools.js";
+import { registerBusinessTools } from "./tools/business-tools.js";
+import { registerInstagramTools } from "./tools/instagram-tools.js";
+import { registerWhatsappTools } from "./tools/whatsapp-tools.js";
+import { registerPagesPlusTools } from "./tools/pages-plus-tools.js";
+import { registerAuthTools } from "./tools/auth-tools.js";
 
 // --- Page registry ---
 
@@ -76,6 +81,11 @@ async function getInsight(pageName: string, postId: string, metric: string) {
 
 const server = new McpServer({ name: "FacebookMCP", version: "3.0.0" });
 registerAdsTools(server as any, { graphApi });
+registerBusinessTools(server as any, { graphApi });
+registerInstagramTools(server as any, { graphApi });
+registerWhatsappTools(server as any, { graphApi });
+registerPagesPlusTools(server as any, { graphApi });
+registerAuthTools(server as any);
 
 // ── Pages ───────────────────────────────────────────────────────────────
 
