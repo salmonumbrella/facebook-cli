@@ -1,0 +1,12 @@
+[
+  {
+    "page_name": "demo",
+    "display_name": "Demo Page",
+    "fb_page_id": "123"
+  },
+  {
+    "page_name": "brand",
+    "display_name": "Brand Page",
+    "fb_page_id": "456"
+  }
+]

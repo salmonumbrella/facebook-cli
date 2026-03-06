@@ -1,0 +1,11 @@
+{
+  "appUsage": {
+    "call_count": 17,
+    "cpu_time": 9
+  },
+  "businessUsage": {
+    "call_count": 5,
+    "type": "ads_management"
+  },
+  "ok": true
+}

@@ -1,0 +1,18 @@
+{
+  "auth": {
+    "provider": "facebook_oauth",
+    "obtained_at": "2026-03-01T00:00:00Z",
+    "expires_at": "2026-04-01T00:00:00Z",
+    "token_type": "bearer",
+    "scopes": [
+      "ads_read",
+      "pages_show_list"
+    ],
+    "user_id": "user_123",
+    "app_id": "app_123"
+  },
+  "authenticated": true,
+  "profile": "default",
+  "source": "cli/env/profile",
+  "token": "profil...7890"
+}

@@ -7,3 +7,6 @@ cli/.env
 .specstory/
 .vscode/
 docs/
+bin/
+dist/
+*.bun-build

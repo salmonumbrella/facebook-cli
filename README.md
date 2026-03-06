@@ -106,9 +106,16 @@ bun install
 
 ### 2.1. Fast Tooling & Git Hooks
 
-- `prek` manages pre-commit hooks (`.pre-commit-config.yaml`).
-- Hooks run `oxlint` and `oxfmt --check` on staged JS/TS/JSON files.
-- Run full local checks with:
+- Install git hooks with:
+
+```bash
+make setup
+```
+
+- This uses [lefthook](https://github.com/evilmartians/lefthook) with the same Go-focused setup as `chatwoot-cli`.
+- Pre-commit runs `gofumpt`, `golangci-lint`, and `go build ./...` for staged Go files.
+- Pre-push runs `go test ./...`.
+- Run the existing TypeScript checks manually with:
 
 ```bash
 bun run check

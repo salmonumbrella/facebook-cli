@@ -1,0 +1,20 @@
+{
+  "active": "work",
+  "profiles": [
+    {
+      "active": false,
+      "hasAccessToken": true,
+      "name": "default"
+    },
+    {
+      "active": false,
+      "hasAccessToken": false,
+      "name": "personal"
+    },
+    {
+      "active": true,
+      "hasAccessToken": true,
+      "name": "work"
+    }
+  ]
+}
