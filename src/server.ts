@@ -184,8 +184,8 @@ server.tool(
 
 server.tool(
   "reply_to_comment",
-  "Reply to a specific comment on a Facebook post.\nInput: page_name (str), post_id (str), comment_id (str), message (str)\nOutput: dict with reply creation status",
-  { page_name: z.string(), post_id: z.string(), comment_id: z.string(), message: z.string() },
+  "Reply to a specific comment on a Facebook post.\nInput: page_name (str), comment_id (str), message (str)\nOutput: dict with reply creation status",
+  { page_name: z.string(), comment_id: z.string(), message: z.string() },
   async ({ page_name, comment_id, message }) => {
     const p = getPage(page_name);
     return json(
@@ -230,8 +230,8 @@ server.tool(
 
 server.tool(
   "delete_comment_from_post",
-  "Alias to delete a comment on a post.\nInput: page_name (str), post_id (str), comment_id (str)\nOutput: dict with deletion result",
-  { page_name: z.string(), post_id: z.string(), comment_id: z.string() },
+  "Alias to delete a comment on a post.\nInput: page_name (str), comment_id (str)\nOutput: dict with deletion result",
+  { page_name: z.string(), comment_id: z.string() },
   async ({ page_name, comment_id }) => {
     const p = getPage(page_name);
     return json(await graphApi("DELETE", comment_id, p.page_access_token));
