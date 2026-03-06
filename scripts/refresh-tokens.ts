@@ -15,9 +15,9 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
+import { DEFAULT_GRAPH_API_VERSION } from "../src/config.js";
 
-const GRAPH_API_VERSION = "v22.0";
-const GRAPH_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+const GRAPH_URL = `https://graph.facebook.com/${DEFAULT_GRAPH_API_VERSION}`;
 const CLAUDE_JSON = join(process.env.HOME!, ".claude.json");
 const MCP_SERVER_NAME = "facebook-mcp";
 
@@ -105,7 +105,7 @@ Get a user access token from https://developers.facebook.com/tools/explorer
 
 const userToken = args[0];
 
-console.log(`Fetching pages from Graph API ${GRAPH_API_VERSION}...`);
+console.log(`Fetching pages from Graph API ${DEFAULT_GRAPH_API_VERSION}...`);
 const pages = await fetchPages(userToken);
 console.log(`Found ${pages.length} page(s):`);
 
