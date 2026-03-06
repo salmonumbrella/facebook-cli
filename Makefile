@@ -14,13 +14,13 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 fmt:
-	go fmt ./...
+	go fmt ./cmd/... ./internal/...
 
 lint:
 	golangci-lint run
 
 test:
-	go test ./...
+	go test ./cmd/... ./internal/...
 
 install:
 	go build -ldflags="-s -w" -trimpath -o $(shell go env GOPATH)/bin/$(BINARY_NAME) ./cmd/fbcli

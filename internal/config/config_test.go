@@ -74,7 +74,7 @@ func TestLoadAppConfigUsesEnvironmentLookup(t *testing.T) {
 		t.Fatalf("expected process env to win, got %q", cfg.AppID)
 	}
 	if cfg.UserToken != "cli-token" {
-		t.Fatalf("expected cli env token, got %q", cfg.UserToken)
+		t.Fatalf("expected .env token, got %q", cfg.UserToken)
 	}
 }
 

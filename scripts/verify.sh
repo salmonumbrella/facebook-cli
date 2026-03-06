@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+go test ./cmd/... ./internal/...
+go run ./cmd/fbcli --help >/dev/null
 bun test
-bun run cli/fbcli.ts --help >/dev/null
-bun run src/server.ts </dev/null >/tmp/facebook-mcp-final.log 2>&1 &
-PID=$!
-sleep 2
-if kill -0 "$PID" 2>/dev/null; then
-  kill "$PID"
-fi
+
+# The MCP server speaks stdio. Running with stdin closed verifies bootstrap and
+# should exit cleanly once it observes EOF.
+bun run src/server.ts </dev/null >/tmp/facebook-mcp-final.log 2>&1

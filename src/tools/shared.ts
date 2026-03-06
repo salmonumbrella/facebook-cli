@@ -24,6 +24,18 @@ export function json(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
 
+export function asOptionalString(value: unknown): string | undefined {
+  return value === undefined || value === null ? undefined : String(value);
+}
+
+export function asOptionalNumber(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+export function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
 /** Parse optional JSON string into a record, returning {} on falsy/non-object input. */
 export function parseObject(input?: string): Record<string, string> {
   if (!input) return {};

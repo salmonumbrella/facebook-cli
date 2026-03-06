@@ -1,3 +1,4 @@
 .specstory/
 docs/
 *.md
+internal/cmd/testdata/golden/

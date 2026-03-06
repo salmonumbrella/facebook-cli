@@ -1,16 +1,17 @@
 {
   "name": "facebook-mcp-cli",
   "version": "2.0.0",
-  "description": "Facebook Page Management MCP server & CLI tools",
+  "description": "Facebook Graph API MCP server with a Go CLI",
   "type": "module",
   "scripts": {
     "start": "bun run src/server.ts",
-    "cli": "bun run cli/fbcli.ts",
     "test": "bun test",
+    "test:go": "go test ./cmd/... ./internal/...",
+    "test:ts": "bun test",
     "verify": "bash scripts/verify.sh",
     "typecheck": "tsgo --noEmit",
-    "lint": "oxlint -c ./oxlint.config.ts src cli tests scripts",
-    "lint:all": "oxlint -c ./oxlint.config.ts src cli tests scripts",
+    "lint": "oxlint -c ./oxlint.config.ts src tests scripts",
+    "lint:all": "oxlint -c ./oxlint.config.ts src tests scripts",
     "format": "oxfmt --ignore-path .gitignore --ignore-path .oxfmtignore",
     "format:check": "oxfmt --check --ignore-path .gitignore --ignore-path .oxfmtignore .",
     "check": "npm-run-all --parallel typecheck lint format:check"

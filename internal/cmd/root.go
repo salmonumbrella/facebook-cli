@@ -145,7 +145,7 @@ func (a *app) requirePageAssets(ctx context.Context) ([]facebook.PageAsset, erro
 		return nil, err
 	}
 	if len(assets) == 0 {
-		return nil, errors.New("no page assets available. Run `fbcli auth login` and `fbcli pages`, or set FACEBOOK_ASSETS in cli/.env")
+		return nil, errors.New("no page assets available. Run `fbcli auth login` and `fbcli pages`, or set FACEBOOK_ASSETS in .env or via FBCLI_ENV_PATH")
 	}
 	return assets, nil
 }

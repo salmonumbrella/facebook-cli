@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-const cliEnvRelativePath = "cli/.env"
+const defaultEnvFileName = ".env"
 
-// Env resolves variables from process env first, then cli/.env.
+// Env resolves variables from process env first, then a discovered .env file.
 type Env struct {
 	values map[string]string
 	path   string
 }
 
-// NewEnv loads cli/.env relative to the current working tree.
+// NewEnv loads .env relative to the current working tree.
 func NewEnv() *Env {
 	env, err := LoadEnvironment("")
 	if err != nil {
@@ -23,7 +23,7 @@ func NewEnv() *Env {
 	return env
 }
 
-// NewEnvFromValues creates an Env from explicit cli/.env values.
+// NewEnvFromValues creates an Env from explicit .env values.
 func NewEnvFromValues(values map[string]string) *Env {
 	cloned := make(map[string]string, len(values))
 	for key, value := range values {
@@ -32,9 +32,9 @@ func NewEnvFromValues(values map[string]string) *Env {
 	return &Env{values: cloned}
 }
 
-// LoadEnvironment discovers and loads cli/.env relative to startDir.
+// LoadEnvironment discovers and loads .env relative to startDir.
 func LoadEnvironment(startDir string) (*Env, error) {
-	path, found, err := findCLIEnvPath(startDir)
+	path, found, err := findEnvPath(startDir)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func LoadEnvironment(startDir string) (*Env, error) {
 		return env, nil
 	}
 
-	values, err := readCLIEnv(path)
+	values, err := readEnvFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func LoadEnvironment(startDir string) (*Env, error) {
 	return env, nil
 }
 
-// Lookup returns process env first, then cli/.env values.
+// Lookup returns process env first, then loaded .env values.
 func (e *Env) Lookup(name string) (string, bool) {
 	if value, ok := os.LookupEnv(name); ok {
 		return value, true
@@ -72,29 +72,29 @@ func (e *Env) Get(name string) string {
 	return value
 }
 
-// CLIEnvPath returns the loaded cli/.env path, if one was found.
-func (e *Env) CLIEnvPath() string {
+// Path returns the loaded .env path, if one was found.
+func (e *Env) Path() string {
 	if e == nil {
 		return ""
 	}
 	return e.path
 }
 
-// CLIEnvPath resolves cli/.env relative to the current working directory tree.
-func CLIEnvPath() string {
+// EnvPath resolves a .env path from FBCLI_ENV_PATH or by walking up from CWD.
+func EnvPath() string {
 	if value, ok := os.LookupEnv("FBCLI_ENV_PATH"); ok && value != "" {
 		return value
 	}
 
-	path, found, err := findCLIEnvPath("")
+	path, found, err := findEnvPath("")
 	if err != nil || !found {
 		return ""
 	}
 	return path
 }
 
-// ParseCLIEnv parses the small dotenv subset supported by the TS CLI.
-func ParseCLIEnv(text string) map[string]string {
+// ParseDotEnv parses the small dotenv subset shared by the Go CLI and MCP server.
+func ParseDotEnv(text string) map[string]string {
 	out := map[string]string{}
 
 	for _, rawLine := range strings.Split(text, "\n") {
@@ -149,7 +149,7 @@ func isEnvPart(ch byte) bool {
 	return isEnvStart(ch) || ch >= '0' && ch <= '9'
 }
 
-func readCLIEnv(path string) (map[string]string, error) {
+func readEnvFile(path string) (map[string]string, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // Local config file path controlled by the CLI user.
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -157,10 +157,10 @@ func readCLIEnv(path string) (map[string]string, error) {
 		}
 		return nil, err
 	}
-	return ParseCLIEnv(string(data)), nil
+	return ParseDotEnv(string(data)), nil
 }
 
-func findCLIEnvPath(startDir string) (string, bool, error) {
+func findEnvPath(startDir string) (string, bool, error) {
 	if value, ok := os.LookupEnv("FBCLI_ENV_PATH"); ok && value != "" {
 		return value, true, nil
 	}
@@ -171,7 +171,7 @@ func findCLIEnvPath(startDir string) (string, bool, error) {
 	}
 
 	for {
-		candidate := filepath.Join(dir, cliEnvRelativePath)
+		candidate := filepath.Join(dir, defaultEnvFileName)
 		info, statErr := os.Stat(candidate)
 		if statErr == nil && !info.IsDir() {
 			return candidate, true, nil

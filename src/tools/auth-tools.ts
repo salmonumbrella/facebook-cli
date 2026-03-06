@@ -34,7 +34,7 @@ export function registerAuthTools(server: ToolServerLike): void {
       return json({
         authenticated: Boolean(token),
         profile: profileName,
-        source: token ? "cli/env/profile" : "none",
+        source: token ? "override/env/profile" : "none",
       });
     },
   );

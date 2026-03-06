@@ -1,254 +1,98 @@
-# Facebook MCP Server & CLI Tools
+# Facebook MCP Server + Go CLI
 
-> **Inspired by [HagaiHen/facebook-mcp-server](https://github.com/HagaiHen/facebook-mcp-server)** — rewritten in TypeScript with **multi-page management** via a `FACEBOOK_ASSETS` JSON configuration. Source: [2b3pro/facebook-mcp-cli](https://github.com/2b3pro/facebook-mcp-cli)
+This repo has two supported surfaces:
 
-A **TypeScript MCP server** for automating and managing interactions on Facebook Pages using the Facebook Graph API. Exposes 53 tools for posting, comment moderation, analytics, engagement tracking, video/reels/stories publishing, slideshows, crossposting, and A/B testing — ready to plug into Claude Desktop or other LLM-based agents. Includes a standalone CLI for direct shell access.
+- A TypeScript MCP server in `src/`
+- A production Go CLI in `cmd/fbcli` and `internal/`
 
----
+The old Bun-based CLI prototype has been removed. The CLI is Go-only now.
 
-## What Is This?
+## Repo Layout
 
-This MCP provides a suite of AI-callable tools that connect directly to Facebook Pages, abstracting common API operations as LLM-friendly functions.
+- `src/`: TypeScript MCP server and tool handlers
+- `cmd/fbcli`: Go binary entrypoint
+- `internal/`: Go CLI command wiring, config, auth, output, and Facebook domain code
+- [CLI-REFERENCE.md](CLI-REFERENCE.md): command reference for the Go CLI
+- [docs/go-cli-README.md](docs/go-cli-README.md): Go CLI setup and usage notes
 
-### Benefits
+## Product Surfaces
 
-- Empowers **social media managers** to automate moderation and analytics.
-- Seamlessly integrates with **Claude Desktop or any MCP-compatible agent**.
-- Enables fine-grained control over Facebook content from natural language.
-- **Standalone CLI** (`cli/fbcli.ts`) for direct shell scripting and automation.
+- Go CLI: the human and shell-facing binary for direct automation, scripting, and release artifacts.
+- MCP server: the agent-facing stdio server for Claude Desktop and other MCP clients that need named tools instead of shell commands.
 
----
+The MCP server stays in TypeScript for now because it is mostly schema registration and transport glue, not performance-sensitive business logic.
 
-## Features
+## Requirements
 
-All tools (except `list_pages`) take `page_name` as the first parameter — a slug-style identifier for the target page (e.g. `"mybusiness"`).
+- Go `1.25+` for the CLI
+- Bun `1.x` for the MCP server and TypeScript tests
 
-| Tool                             | Description                                                         |
-|----------------------------------|---------------------------------------------------------------------|
-| `list_pages`                     | List all configured Facebook Pages (no `page_name` param needed).   |
-| `post_to_facebook`               | Create a new Facebook post with a message.                          |
-| `reply_to_comment`               | Reply to a specific comment on a post.                              |
-| `get_page_posts`                 | Retrieve recent posts from the Page.                                |
-| `get_post_comments`              | Fetch comments on a given post.                                     |
-| `delete_post`                    | Delete a specific post by ID.                                       |
-| `delete_comment`                 | Delete a specific comment by ID.                                    |
-| `hide_comment`                   | Hide a comment from public view.                                    |
-| `unhide_comment`                 | Unhide a previously hidden comment.                                 |
-| `delete_comment_from_post`       | Alias for deleting a comment from a specific post.                  |
-| `filter_negative_comments`       | Filter out comments with negative sentiment keywords.               |
-| `get_number_of_comments`         | Count the number of comments on a post.                             |
-| `get_number_of_likes`            | Count the number of likes on a post.                                |
-| `get_post_insights`              | Get all insights metrics for a post.                                |
-| `get_post_impressions`           | Get total impressions on a post.                                    |
-| `get_post_impressions_unique`    | Get number of unique users who saw the post.                        |
-| `get_post_impressions_paid`      | Get number of paid impressions on the post.                         |
-| `get_post_impressions_organic`   | Get number of organic impressions on the post.                      |
-| `get_post_engaged_users`         | Get number of users who engaged with the post.                      |
-| `get_post_clicks`                | Get number of clicks on the post.                                   |
-| `get_post_reactions_like_total`  | Get total number of 'Like' reactions.                               |
-| `get_post_reactions_love_total`  | Get total number of 'Love' reactions.                               |
-| `get_post_reactions_wow_total`   | Get total number of 'Wow' reactions.                                |
-| `get_post_reactions_haha_total`  | Get total number of 'Haha' reactions.                               |
-| `get_post_reactions_sorry_total` | Get total number of 'Sorry' reactions.                              |
-| `get_post_reactions_anger_total` | Get total number of 'Anger' reactions.                              |
-| `get_post_top_commenters`        | Get the top commenters on a post.                                   |
-| `post_image_to_facebook`         | Post an image with a caption to the Facebook page.                  |
-| `send_dm_to_user`                | Send a direct message to a user.                                    |
-| `update_post`                    | Updates an existing post's message.                                 |
-| `schedule_post`                  | Schedule a post for future publication.                             |
-| `get_page_fan_count`             | Retrieve the total number of Page fans.                             |
-| `get_post_share_count`           | Get the number of shares on a post.                                 |
-| `get_post_reactions_breakdown`   | Get all reaction counts for a post in one call.                     |
-| `bulk_delete_comments`           | Delete multiple comments by ID.                                     |
-| `bulk_hide_comments`             | Hide multiple comments by ID.                                       |
-| **Video & Reels**                |                                                                     |
-| `publish_reel`                   | Upload and publish a Reel (3-step upload flow).                     |
-| `list_reels`                     | List published Reels on the Page.                                   |
-| `get_video_status`               | Check video processing status after upload.                         |
-| `publish_video`                  | Publish a video to the Page feed.                                   |
-| **Stories**                      |                                                                     |
-| `publish_video_story`            | Publish a video Story (3-step upload flow).                         |
-| `publish_photo_story`            | Publish a photo Story (2-step upload flow).                         |
-| `list_stories`                   | List Page Stories.                                                  |
-| **Slideshows**                   |                                                                     |
-| `create_slideshow`               | Create slideshow video from 3-7 images.                             |
-| **Music**                        |                                                                     |
-| `get_music_recommendations`      | Get music recommendations for videos/reels.                         |
-| **Crossposting**                 |                                                                     |
-| `crosspost_video`                | Crosspost a video to another Page.                                  |
-| `enable_crossposting`            | Enable video crossposting to specific Pages.                        |
-| `crosspost_eligible_pages`       | List Pages eligible for crossposting.                               |
-| `check_crosspost_eligibility`    | Check if a video can be crossposted.                                |
-| **A/B Testing**                  |                                                                     |
-| `create_ab_test`                 | Create A/B test for video variants.                                 |
-| `get_ab_test`                    | Get A/B test results.                                               |
-| `list_ab_tests`                  | List all A/B tests on the Page.                                     |
-| `delete_ab_test`                 | Delete an A/B test.                                                 |
+## Configuration
 
----
+Both the Go CLI and the MCP server read the same environment variables. Put them in a repo-root `.env`, export them in your shell, or point the Go CLI at a file with `FBCLI_ENV_PATH`.
 
-## Setup & Installation
+```dotenv
+FACEBOOK_ASSETS='[
+  {
+    "fb_page_id":"123456",
+    "page_name":"mybusiness",
+    "display_name":"My Business Page",
+    "page_access_token":"EAA..."
+  }
+]'
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/2b3pro/facebook-mcp-cli.git
-cd facebook-mcp-cli
+FB_APP_ID=123456789
+FB_USER_ACCESS_TOKEN=EAA...
+FB_API_VERSION=v25.0
 ```
 
-### 2. Install Dependencies
+`FACEBOOK_ASSETS` is the page registry used by page-scoped commands and MCP tools.
 
-Requires [Bun](https://bun.sh) runtime:
+## Run The Go CLI
+
+```bash
+go run ./cmd/fbcli --help
+go run ./cmd/fbcli pages
+go run ./cmd/fbcli auth status
+go run ./cmd/fbcli --dry-run ads campaigns list
+```
+
+Build a standalone binary with:
+
+```bash
+make build
+./bin/fbcli --help
+```
+
+## Run The MCP Server
 
 ```bash
 bun install
-```
-
-### 2.1. Fast Tooling & Git Hooks
-
-- Install git hooks with:
-
-```bash
-make setup
-```
-
-- This uses [lefthook](https://github.com/evilmartians/lefthook) with the same Go-focused setup as `chatwoot-cli`.
-- Pre-commit runs `gofumpt`, `golangci-lint`, and `go build ./...` for staged Go files.
-- Pre-push runs `go test ./...`.
-- Run the existing TypeScript checks manually with:
-
-```bash
-bun run check
-```
-
-### 3. Set Up Environment
-
-Create a `.env` file in the project root with a `FACEBOOK_ASSETS` JSON array:
-
-```
-FACEBOOK_ASSETS='[{"fb_page_id":"123456","page_name":"mybusiness","display_name":"My Business Page","page_access_token":"EAA..."},{"fb_page_id":"789012","page_name":"sideproject","display_name":"Side Project","page_access_token":"EAA..."}]'
-```
-
-Each entry requires:
-
-| Field | Description |
-|-------|-------------|
-| `fb_page_id` | Facebook Page ID |
-| `page_name` | Slug identifier (lowercase, no spaces) — used as first param in all tools |
-| `display_name` | Human-readable label |
-| `page_access_token` | Page access token from [Graph API Explorer](https://developers.facebook.com/tools/explorer) |
-
-### 4. Run the MCP Server
-
-```bash
 bun run src/server.ts
 ```
 
----
-
-## Using with Claude Desktop
-
-Add the following to your Claude Desktop config (`~/.claude.json` under `mcpServers`):
+Example Claude Desktop entry:
 
 ```json
 "facebook-mcp": {
   "command": "bun",
-  "args": ["run", "/path/to/facebook-mcp-cli/src/server.ts"],
+  "args": ["run", "/path/to/facebook-cli/src/server.ts"],
   "env": {
     "FACEBOOK_ASSETS": "[{\"fb_page_id\":\"123\",\"page_name\":\"mypage\",\"display_name\":\"My Page\",\"page_access_token\":\"EAA...\"}]"
   }
 }
 ```
 
----
-
-## CLI
-
-A standalone CLI is available at `cli/fbcli.ts` for direct shell access to all the same operations. See [cli/README.md](cli/README.md) for full documentation.
+## Verify
 
 ```bash
-bun run cli/fbcli.ts --help
-bun run cli/fbcli.ts pages
-bun run cli/fbcli.ts posts mybusiness
+go test ./cmd/... ./internal/...
+bun test
+bash scripts/verify.sh
 ```
 
-Commands that accept text content or ID lists support **stdin piping** — omit the argument and pipe input instead:
+## Notes
 
-```bash
-cat draft.txt | fbcli post mybusiness
-echo "Thanks!" | fbcli reply mybusiness 123_456
-fbcli comments mybusiness 123_456 | jq -r '.data[].id' | fbcli bulk-hide mybusiness
-```
-
-### v2 Runtime and Command Groups
-
-Global runtime flags:
-
-```bash
-fbcli --output json|table|csv ...
-fbcli --dry-run ...
-fbcli --api-version v25.0 ...
-fbcli --access-token EAA...
-fbcli --profile default ...
-```
-
-New command groups:
-- `auth` (`login`, `status`, `logout`, `refresh`)
-- `profile` (`add`, `switch`, `show`, `remove`, `list`)
-- `limits` (`check`)
-- `ads` (accounts, campaigns, adsets, ads, creatives, images, insights, audiences, deploy, validate, duplicate, stats, optimize)
-- `business`, `invoices`, `ad-library`
-- `ig`
-- `wa`
-- `page-insights`, plus `post-local`, `draft`, `me`
-
-Profile store path:
-- `~/.config/facebook-cli/profiles.json`
-
-Dry-run behavior:
-- `--dry-run` sets `FB_DRY_RUN=1` and blocks non-GET Graph mutations.
-
-HTTP safety controls (`FB_HTTP_*`):
-- `FB_HTTP_MAX_RATE_LIMIT_RETRIES` (default `4`)
-- `FB_HTTP_MAX_SERVER_RETRIES` (default `2`)
-- `FB_HTTP_RETRY_BASE_DELAY_MS` (default `500`)
-- `FB_HTTP_RETRY_MAX_DELAY_MS` (default `10000`)
-- `FB_HTTP_RETRY_JITTER_RATIO` (default `0.2`)
-- `FB_HTTP_CIRCUIT_BREAKER_ENABLED` (default `true`)
-- `FB_HTTP_CIRCUIT_FAILURE_THRESHOLD` (default `5`)
-- `FB_HTTP_CIRCUIT_COOLDOWN_MS` (default `30000`)
-- `FB_HTTP_CIRCUIT_HALF_OPEN_SUCCESSES` (default `1`)
-- `FB_HTTP_GLOBAL_MIN_INTERVAL_MS` (default `50`)
-- `FB_HTTP_TOKEN_MIN_INTERVAL_MS` (default `150`)
-
-### MCP Tool Categories (Expanded)
-
-The MCP server now includes categories for:
-- Ads
-- Business and invoices
-- Instagram
-- WhatsApp
-- Page enhancements
-- Auth and profile management
-
----
-
-## Architecture
-
-### MCP Server (`src/`)
-
-```
-src/server.ts  →  src/api.ts  →  Facebook Graph API
-(MCP tools)       (HTTP wrapper)
-     ↑
-src/config.ts
-(env + types)
-```
-
-- **src/config.ts** — `PageAsset` interface, env loading, API base URL
-- **src/api.ts** — `graphApi()`, `ruploadApi()`, `resumableUpload()`, `graphApiBatch()` HTTP wrappers
-- **src/server.ts** — All 53 MCP tools via `@modelcontextprotocol/sdk`
-
-### CLI (`cli/`)
-
-Self-contained single-file CLI at `cli/fbcli.ts`. Independent of the MCP server — reads its own `.env`.
+- GoReleaser ships the Go binary as `fbcli`.
+- Git hooks are Go-focused via `lefthook`.
+- The TypeScript package remains because `src/` is still the MCP server.

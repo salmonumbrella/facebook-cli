@@ -15,7 +15,7 @@ const (
 	DefaultGraphAPIVersion = "v25.0"
 )
 
-// PageAsset matches the FACEBOOK_ASSETS entries used by the TypeScript CLI.
+// PageAsset matches the FACEBOOK_ASSETS entries shared by the MCP server and Go CLI.
 type PageAsset struct {
 	FBPageID        string `json:"fb_page_id"`
 	PageName        string `json:"page_name"`
@@ -23,7 +23,7 @@ type PageAsset struct {
 	PageAccessToken string `json:"page_access_token"`
 }
 
-// AppConfig holds Facebook app credentials loaded from process env or cli/.env.
+// AppConfig holds Facebook app credentials loaded from process env or .env.
 type AppConfig struct {
 	AppID     string
 	UserToken string
@@ -52,7 +52,7 @@ func GraphAPIBase(version string) string {
 	return "https://graph.facebook.com/" + GraphAPIVersion(version)
 }
 
-// ResolveAccessToken applies the cli > env > profile precedence used by the TS CLI.
+// ResolveAccessToken applies the cli > env > profile precedence used by the CLI.
 func ResolveAccessToken(cliToken, envToken, profileToken string) string {
 	if cliToken != "" {
 		return cliToken
@@ -72,7 +72,7 @@ func ParsePageAssets(raw string) ([]PageAsset, error) {
 	return validatePageAssets(normalized)
 }
 
-// LoadPageAssets reads FACEBOOK_ASSETS from process env or cli/.env.
+// LoadPageAssets reads FACEBOOK_ASSETS from process env or .env.
 func LoadPageAssets(env *Env) ([]PageAsset, error) {
 	if env == nil {
 		env = NewEnv()
@@ -158,7 +158,7 @@ func invalidPageAssets(path, message string) error {
 	return fmt.Errorf("FACEBOOK_ASSETS has invalid shape at '%s': %s", path, message)
 }
 
-// LoadAppConfig reads app config fields from process env or cli/.env.
+// LoadAppConfig reads app config fields from process env or .env.
 func LoadAppConfig(env *Env) AppConfig {
 	if env == nil {
 		env = NewEnv()

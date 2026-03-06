@@ -13,6 +13,6 @@
   },
   "authenticated": true,
   "profile": "default",
-  "source": "cli/env/profile",
+  "source": "override/env/profile",
   "token": "profil...7890"
 }

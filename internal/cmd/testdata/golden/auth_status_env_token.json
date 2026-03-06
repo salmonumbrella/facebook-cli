@@ -2,6 +2,6 @@
   "auth": null,
   "authenticated": true,
   "profile": "default",
-  "source": "cli/env/profile",
+  "source": "override/env/profile",
   "token": "env-to...3456"
 }
