@@ -9,4 +9,6 @@ cli/.env
 docs/
 bin/
 dist/
+CLAUDE.md
 *.bun-build
+/fbcli
