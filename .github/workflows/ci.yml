@@ -39,7 +39,7 @@ jobs:
         run: bun run typecheck
 
       - name: Lint TS
-        run: bun run lint
+        run: bunx oxlint -c ./oxlint.config.ts src tests scripts
 
       - name: Test TS
         run: bun test
