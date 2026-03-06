@@ -123,18 +123,9 @@ func (a *app) loadProfileStore() (*profile.Store, profile.StoreData, error) {
 }
 
 func (a *app) loadPageAssets(ctx context.Context) ([]facebook.PageAsset, error) {
-	configAssets, err := config.LoadPageAssets(a.env)
+	assets, err := config.LoadPageAssets(a.env)
 	if err != nil {
 		return nil, err
-	}
-	assets := make([]facebook.PageAsset, 0, len(configAssets))
-	for _, asset := range configAssets {
-		assets = append(assets, facebook.PageAsset{
-			FBPageID:        asset.FBPageID,
-			PageName:        asset.PageName,
-			DisplayName:     asset.DisplayName,
-			PageAccessToken: asset.PageAccessToken,
-		})
 	}
 	return facebook.ResolvePageAssets(ctx, a.client, assets, a.runtime.AccessToken)
 }

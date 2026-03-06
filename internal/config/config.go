@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/salmonumbrella/facebook-cli/internal/facebook"
 	"github.com/salmonumbrella/facebook-cli/internal/profile"
 )
 
@@ -14,14 +15,6 @@ const (
 	AppName                = "facebook-cli"
 	DefaultGraphAPIVersion = "v25.0"
 )
-
-// PageAsset matches the FACEBOOK_ASSETS entries shared by the MCP server and Go CLI.
-type PageAsset struct {
-	FBPageID        string `json:"fb_page_id"`
-	PageName        string `json:"page_name"`
-	DisplayName     string `json:"display_name"`
-	PageAccessToken string `json:"page_access_token"`
-}
 
 // AppConfig holds Facebook app credentials loaded from process env or .env.
 type AppConfig struct {
@@ -64,7 +57,7 @@ func ResolveAccessToken(cliToken, envToken, profileToken string) string {
 }
 
 // ParsePageAssets parses and validates the raw FACEBOOK_ASSETS JSON payload.
-func ParsePageAssets(raw string) ([]PageAsset, error) {
+func ParsePageAssets(raw string) ([]facebook.PageAsset, error) {
 	normalized, err := decodeJSONValue(raw)
 	if err != nil {
 		return nil, errors.New("FACEBOOK_ASSETS is not valid JSON")
@@ -73,7 +66,7 @@ func ParsePageAssets(raw string) ([]PageAsset, error) {
 }
 
 // LoadPageAssets reads FACEBOOK_ASSETS from process env or .env.
-func LoadPageAssets(env *Env) ([]PageAsset, error) {
+func LoadPageAssets(env *Env) ([]facebook.PageAsset, error) {
 	if env == nil {
 		env = NewEnv()
 	}
@@ -103,20 +96,20 @@ func decodeJSONValue(raw string) (any, error) {
 	return value, nil
 }
 
-func validatePageAssets(input any) ([]PageAsset, error) {
+func validatePageAssets(input any) ([]facebook.PageAsset, error) {
 	rows, ok := input.([]any)
 	if !ok {
 		return nil, invalidPageAssets("FACEBOOK_ASSETS", "expected array")
 	}
 
-	assets := make([]PageAsset, 0, len(rows))
+	assets := make([]facebook.PageAsset, 0, len(rows))
 	for index, row := range rows {
 		object, ok := row.(map[string]any)
 		if !ok {
 			return nil, invalidPageAssets(strconv.Itoa(index), "expected object")
 		}
 
-		asset := PageAsset{}
+		asset := facebook.PageAsset{}
 		var err error
 		if asset.FBPageID, err = requiredPageAssetString(object, index, "fb_page_id"); err != nil {
 			return nil, err
