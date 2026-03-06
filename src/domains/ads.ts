@@ -1,3 +1,5 @@
+import { normalizeAccountPath } from "./ads-shared.js";
+
 export interface Deps {
   graphApi: (
     method: string,
@@ -83,7 +85,7 @@ export async function getInsightsWithBreakdowns(
   token: string,
   params: Record<string, string>,
 ) {
-  const accountPath = accountId.startsWith("act_") ? accountId : `act_${accountId}`;
+  const accountPath = normalizeAccountPath(accountId);
   const response = await deps.graphApi("GET", `${accountPath}/insights`, token, params);
   if (!Array.isArray(response?.data)) return response;
 
@@ -239,7 +241,7 @@ export async function duplicateCampaign(
   accountId: string,
   options: DuplicateCampaignOptions = {},
 ) {
-  const accountPath = accountId.startsWith("act_") ? accountId : `act_${accountId}`;
+  const accountPath = normalizeAccountPath(accountId);
   const sourceCampaign = await deps.graphApi("GET", campaignId, token);
   const adSetsRes = await deps.graphApi("GET", `${campaignId}/adsets`, token);
   const sourceAdSets: Array<Record<string, unknown>> = Array.isArray(adSetsRes?.data)

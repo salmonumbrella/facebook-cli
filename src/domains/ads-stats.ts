@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { stringify } from "csv-stringify/sync";
+import { normalizeAccountPath } from "./ads-shared.js";
 
 export interface Deps {
   graphApi: (
@@ -46,10 +47,6 @@ function summarize(values: number[]) {
   const max = Math.max(...values);
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
   return { min, max, avg, stddev: stddev(values, avg) };
-}
-
-function normalizeAccountPath(accountId: string): string {
-  return accountId.startsWith("act_") ? accountId : `act_${accountId}`;
 }
 
 function parseInsightsRow(row: Record<string, unknown>): StatsPoint {

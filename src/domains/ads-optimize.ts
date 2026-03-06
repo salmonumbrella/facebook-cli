@@ -1,4 +1,5 @@
 import yaml from "js-yaml";
+import { normalizeAccountPath } from "./ads-shared.js";
 
 export interface Deps {
   graphApi: (
@@ -82,10 +83,6 @@ function jitter(max = 150): number {
   return Math.floor(Math.random() * max);
 }
 
-function accountPath(accountId: string): string {
-  return accountId.startsWith("act_") ? accountId : `act_${accountId}`;
-}
-
 export async function createTestCampaigns(
   deps: Deps,
   token: string,
@@ -135,7 +132,7 @@ export async function createTestCampaigns(
       created.push(
         await deps.graphApi(
           "POST",
-          `${accountPath(accountId)}/campaigns`,
+          `${normalizeAccountPath(accountId)}/campaigns`,
           token,
           undefined,
           payload,
