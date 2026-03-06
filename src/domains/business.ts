@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "../lib/http.js";
+
 export interface Deps {
   graphApi: (
     method: string,
@@ -45,7 +47,14 @@ export async function downloadInvoicePdf(
   const uri = invoice?.download_uri;
   if (!uri) throw new Error("Invoice download_uri not available");
 
-  const res = await fetch(String(uri));
+  const res = await fetchWithRetry(
+    String(uri),
+    { method: "GET" },
+    {
+      breakerKey: "invoice_download",
+      tokenKey: token,
+    },
+  );
   if (!res.ok) throw new Error(`Failed to download invoice PDF: ${res.status}`);
   return res.arrayBuffer();
 }

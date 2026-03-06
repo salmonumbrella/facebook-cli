@@ -3,12 +3,14 @@
  * Single function for all Graph API calls — mirrors the Python FacebookAPI._request() pattern.
  */
 
-import { GRAPH_API_BASE, GRAPH_API_VERSION } from "./config.js";
+import { getGraphApiBase, getGraphApiVersion } from "./config.js";
 import { fetchWithRetry } from "./lib/http.js";
 
 // --- Debug logging (stderr, only when DEBUG=1) ---
 
 const DEBUG = !!process.env.DEBUG;
+
+type GraphPayload = Record<string, unknown>;
 
 export function debug(label: string, ...args: unknown[]) {
   if (DEBUG) console.error(`[fb:${label}]`, ...args);
@@ -18,31 +20,63 @@ export function isError(res: any): boolean {
   return res?.error !== undefined;
 }
 
+function isMutation(method: string): boolean {
+  const normalized = method.toUpperCase();
+  return normalized !== "GET" && normalized !== "DELETE";
+}
+
+function normalizeGraphValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
+}
+
+function appendGraphParams(searchParams: URLSearchParams, params: GraphPayload): void {
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    searchParams.set(key, normalizeGraphValue(value));
+  }
+}
+
+function buildGraphBody(payload: GraphPayload): URLSearchParams {
+  const body = new URLSearchParams();
+  appendGraphParams(body, payload);
+  return body;
+}
+
 export async function graphApi(
   method: string,
   endpoint: string,
   token: string,
-  params?: Record<string, string>,
-  body?: Record<string, unknown>,
+  params?: GraphPayload,
+  body?: GraphPayload,
 ): Promise<any> {
   if (process.env.FB_DRY_RUN === "1" && method !== "GET") {
     return { dry_run: true, method, endpoint, params, body };
   }
 
-  const url = new URL(`${GRAPH_API_BASE}/${endpoint}`);
+  const url = new URL(`${getGraphApiBase()}/${endpoint}`);
   url.searchParams.set("access_token", token);
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      url.searchParams.set(k, v);
-    }
+
+  const requestBody = isMutation(method) ? (body ?? params) : body;
+  const requestParams = isMutation(method) ? undefined : params;
+  if (requestParams) {
+    appendGraphParams(url.searchParams, requestParams);
   }
+
   const opts: RequestInit = { method };
-  if (body) {
-    opts.headers = { "Content-Type": "application/json" };
-    opts.body = JSON.stringify(body);
+  if (requestBody) {
+    opts.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+    opts.body = buildGraphBody(requestBody).toString();
   }
+
   debug("graph", method, endpoint);
-  const res = await fetchWithRetry(url.toString(), opts);
+  const normalizedMethod = method.toUpperCase();
+  const breakerKey = normalizedMethod === "GET" ? "graph_read" : "graph_write";
+  const res = await fetchWithRetry(url.toString(), opts, {
+    breakerKey,
+    tokenKey: token,
+  });
   return res.json();
 }
 
@@ -51,11 +85,18 @@ export async function paginateAll<T>(firstUrl: string, limit?: number): Promise<
   let nextUrl: string | undefined = firstUrl;
 
   while (nextUrl) {
-    const res = await fetchWithRetry(nextUrl, { method: "GET" });
+    const graphApiBase = getGraphApiBase();
+    const resolvedUrl = new URL(nextUrl, graphApiBase).toString();
+    const tokenKey = new URL(resolvedUrl).searchParams.get("access_token") ?? undefined;
+    const res = await fetchWithRetry(
+      resolvedUrl,
+      { method: "GET" },
+      { breakerKey: "graph_page", tokenKey },
+    );
     const json = (await res.json()) as { data?: T[]; paging?: { next?: string } };
     if (json.data) out.push(...json.data);
     if (limit && out.length >= limit) return out.slice(0, limit);
-    nextUrl = json.paging?.next;
+    nextUrl = json.paging?.next ? new URL(json.paging.next, graphApiBase).toString() : undefined;
   }
 
   return out;
@@ -101,12 +142,19 @@ export async function graphApiBatch(
       return item;
     });
 
-    const url = new URL(GRAPH_API_BASE);
+    const url = new URL(getGraphApiBase());
     url.searchParams.set("access_token", token);
     url.searchParams.set("include_headers", "false");
     url.searchParams.set("batch", JSON.stringify(batch));
 
-    const res = await fetchWithRetry(url.toString(), { method: "POST" });
+    const res = await fetchWithRetry(
+      url.toString(),
+      { method: "POST" },
+      {
+        breakerKey: "graph_batch",
+        tokenKey: token,
+      },
+    );
     const raw: Array<{ code: number; body: string } | null> = await res.json();
 
     for (const item of raw) {
@@ -128,7 +176,9 @@ export async function graphApiBatch(
 
 // --- Rupload API (Reels & Stories) ---
 
-const RUPLOAD_BASE = `https://rupload.facebook.com/video-upload/${GRAPH_API_VERSION}`;
+function getRuploadBase(): string {
+  return `https://rupload.facebook.com/video-upload/${getGraphApiVersion()}`;
+}
 
 /**
  * Upload to rupload.facebook.com for Reels and Stories.
@@ -140,17 +190,17 @@ export async function ruploadApi(
   headers?: Record<string, string>,
   body?: Uint8Array,
 ): Promise<any> {
-  const url = endpoint.startsWith("http") ? endpoint : `${RUPLOAD_BASE}/${endpoint}`;
+  const url = endpoint.startsWith("http") ? endpoint : `${getRuploadBase()}/${endpoint}`;
   const hdrs: Record<string, string> = {
     Authorization: `OAuth ${token}`,
     ...headers,
   };
   const opts: RequestInit = { method: "POST", headers: hdrs };
   if (body) {
-    opts.body = body;
+    opts.body = body as BodyInit;
   }
   debug("rupload", endpoint);
-  const res = await fetchWithRetry(url, opts);
+  const res = await fetchWithRetry(url, opts, { breakerKey: "rupload", tokenKey: token });
   return res.json();
 }
 
@@ -181,16 +231,23 @@ export async function resumableUpload(
 
   // Step 2: Transfer binary
   debug("upload:transfer", sessionId);
-  const uploadUrl = `${GRAPH_API_BASE}/${sessionId}`;
-  const res = await fetchWithRetry(uploadUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `OAuth ${userToken}`,
-      file_offset: "0",
-      "Content-Type": "application/octet-stream",
+  const uploadUrl = `${getGraphApiBase()}/${sessionId}`;
+  const res = await fetchWithRetry(
+    uploadUrl,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `OAuth ${userToken}`,
+        file_offset: "0",
+        "Content-Type": "application/octet-stream",
+      },
+      body: fileData as BodyInit,
     },
-    body: fileData,
-  });
+    {
+      breakerKey: "upload_transfer",
+      tokenKey: userToken,
+    },
+  );
   const result = await res.json();
   return result.h; // file handle
 }

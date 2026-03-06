@@ -55,7 +55,7 @@ export const listIgComments = (
 ) => deps.graphApi("GET", `${mediaId}/comments`, token, params);
 
 export const replyIgComment = (deps: Deps, commentId: string, token: string, message: string) =>
-  deps.graphApi("POST", `${commentId}/replies`, token, { message });
+  deps.graphApi("POST", `${commentId}/replies`, token, undefined, { message });
 
 export async function publishIgMedia(
   deps: Deps,
@@ -63,14 +63,14 @@ export async function publishIgMedia(
   token: string,
   media: { image_url?: string; video_url?: string; caption?: string; media_type?: string },
 ) {
-  const createRes = await deps.graphApi("POST", `${igUserId}/media`, token, {
+  const createRes = await deps.graphApi("POST", `${igUserId}/media`, token, undefined, {
     ...(media.image_url ? { image_url: media.image_url } : {}),
     ...(media.video_url ? { video_url: media.video_url } : {}),
     ...(media.caption ? { caption: media.caption } : {}),
     ...(media.media_type ? { media_type: media.media_type } : {}),
   });
 
-  return deps.graphApi("POST", `${igUserId}/media_publish`, token, {
+  return deps.graphApi("POST", `${igUserId}/media_publish`, token, undefined, {
     creation_id: String(createRes?.id ?? ""),
   });
 }

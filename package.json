@@ -8,11 +8,13 @@
     "cli": "bun run cli/fbcli.ts",
     "test": "bun test",
     "verify": "bash scripts/verify.sh",
-    "lint": "oxlint -c ./.oxlintrc.json src cli tests scripts",
-    "lint:all": "oxlint -c ./.oxlintrc.json src cli tests scripts",
+    "typecheck": "tsgo --noEmit",
+    "lint": "oxlint -c ./oxlint.config.ts src cli tests scripts",
+    "lint:all": "oxlint -c ./oxlint.config.ts src cli tests scripts",
     "format": "oxfmt --ignore-path .gitignore --ignore-path .oxfmtignore",
     "format:check": "oxfmt --check --ignore-path .gitignore --ignore-path .oxfmtignore .",
-    "prepare": "lefthook install"
+    "check": "npm-run-all --parallel typecheck lint format:check",
+    "prepare": "prek install -f"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
@@ -22,8 +24,12 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@j178/prek": "^0.3.4",
+    "@nkzw/oxlint-config": "^1.0.1",
     "@types/bun": "latest",
-    "lefthook": "^2.1.2",
+    "@types/js-yaml": "^4.0.9",
+    "@typescript/native-preview": "^7.0.0-dev.20260304.1",
+    "npm-run-all2": "^8.0.4",
     "oxfmt": "^0.36.0",
     "oxlint": "^1.51.0"
   }

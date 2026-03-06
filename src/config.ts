@@ -3,23 +3,28 @@
  * Bun auto-loads .env from CWD.
  */
 
-export interface PageAsset {
-  fb_page_id: string;
-  page_name: string;
-  display_name: string;
-  page_access_token: string;
-}
+import { z } from "zod";
+
+const pageAssetSchema = z.object({
+  fb_page_id: z.string().min(1),
+  page_name: z.string().min(1),
+  display_name: z.string().min(1),
+  page_access_token: z.string().min(1),
+});
+
+export type PageAsset = z.infer<typeof pageAssetSchema>;
+
+const pageAssetsSchema = z.array(pageAssetSchema);
 
 export const DEFAULT_GRAPH_API_VERSION = "v25.0";
 
-export function getGraphApiBase(
-  version = process.env.FB_API_VERSION || DEFAULT_GRAPH_API_VERSION,
-): string {
-  return `https://graph.facebook.com/${version}`;
+export function getGraphApiVersion(version = process.env.FB_API_VERSION): string {
+  return version || DEFAULT_GRAPH_API_VERSION;
 }
 
-export const GRAPH_API_VERSION = process.env.FB_API_VERSION || DEFAULT_GRAPH_API_VERSION;
-export const GRAPH_API_BASE = getGraphApiBase(GRAPH_API_VERSION);
+export function getGraphApiBase(version = getGraphApiVersion()): string {
+  return `https://graph.facebook.com/${version}`;
+}
 
 export function resolveAccessToken(
   cliToken?: string,
@@ -29,13 +34,26 @@ export function resolveAccessToken(
   return cliToken ?? envToken ?? profileToken;
 }
 
+export function parsePageAssets(input: unknown): PageAsset[] {
+  const parsed = pageAssetsSchema.safeParse(input);
+  if (parsed.success) return parsed.data;
+
+  const issue = parsed.error.issues[0];
+  const path = issue?.path.length ? issue.path.join(".") : "FACEBOOK_ASSETS";
+  throw new Error(
+    `FACEBOOK_ASSETS has invalid shape at '${path}': ${issue?.message ?? "invalid value"}`,
+  );
+}
+
 export function loadAssets(): PageAsset[] {
   const raw = process.env.FACEBOOK_ASSETS ?? "[]";
+  let parsed: unknown;
   try {
-    return JSON.parse(raw);
+    parsed = JSON.parse(raw);
   } catch {
     throw new Error("FACEBOOK_ASSETS is not valid JSON");
   }
+  return parsePageAssets(parsed);
 }
 
 export interface AppConfig {

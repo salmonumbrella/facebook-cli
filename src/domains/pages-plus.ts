@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-import { GRAPH_API_BASE } from "../config.js";
+import { getGraphApiBase } from "../config.js";
+import { fetchWithRetry } from "../lib/http.js";
 
 export interface Deps {
   graphApi: (
@@ -32,9 +33,16 @@ export async function uploadLocalPhoto(
   form.set("source", new Blob([data]), basename(filePath));
   if (caption) form.set("caption", caption);
 
-  const url = new URL(`${GRAPH_API_BASE}/${pageId}/photos`);
+  const url = new URL(`${getGraphApiBase()}/${pageId}/photos`);
   url.searchParams.set("access_token", token);
-  const res = await fetch(url.toString(), { method: "POST", body: form });
+  const res = await fetchWithRetry(
+    url.toString(),
+    { method: "POST", body: form },
+    {
+      breakerKey: "graph_photo_upload",
+      tokenKey: token,
+    },
+  );
   return res.json();
 }
 
@@ -45,7 +53,7 @@ export const createDraftPost = (
   message: string,
   params?: Record<string, string>,
 ) =>
-  deps.graphApi("POST", `${pageId}/feed`, token, {
+  deps.graphApi("POST", `${pageId}/feed`, token, undefined, {
     message,
     published: "false",
     unpublished_content_type: "DRAFT",

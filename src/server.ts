@@ -9,6 +9,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { loadAssets, type PageAsset } from "./config.js";
 import { graphApi, graphApiBatch, ruploadApi, debug, isError } from "./api.js";
+import { getDefaultPageAsset, getPageOrThrow, listPageSummaries } from "./lib/page-registry.js";
 import { registerAdsTools } from "./tools/ads-tools.js";
 import { registerBusinessTools } from "./tools/business-tools.js";
 import { registerInstagramTools } from "./tools/instagram-tools.js";
@@ -19,18 +20,9 @@ import { registerAuthTools } from "./tools/auth-tools.js";
 // --- Page registry ---
 
 const assets = loadAssets();
-const pages = new Map<string, PageAsset>();
-for (const asset of assets) {
-  pages.set(asset.page_name, asset);
-}
 
 function getPage(name: string): PageAsset {
-  const page = pages.get(name);
-  if (!page) {
-    const available = [...pages.keys()].join(", ") || "(none configured)";
-    throw new Error(`Page '${name}' not found. Available pages: ${available}`);
-  }
-  return page;
+  return getPageOrThrow(assets, name);
 }
 
 function json(data: unknown) {
@@ -92,12 +84,7 @@ server.tool(
   "List all available Facebook Pages.\nInput: None\nOutput: list of page objects with page_name, display_name, fb_page_id",
   {},
   async () => {
-    const result = assets.map((a) => ({
-      page_name: a.page_name,
-      display_name: a.display_name,
-      fb_page_id: a.fb_page_id,
-    }));
-    return json(result);
+    return json(listPageSummaries(assets));
   },
 );
 
@@ -109,7 +96,9 @@ server.tool(
   { page_name: z.string(), message: z.string() },
   async ({ page_name, message }) => {
     const p = getPage(page_name);
-    return json(await graphApi("POST", `${p.fb_page_id}/feed`, p.page_access_token, { message }));
+    return json(
+      await graphApi("POST", `${p.fb_page_id}/feed`, p.page_access_token, undefined, { message }),
+    );
   },
 );
 
@@ -134,7 +123,7 @@ server.tool(
   async ({ page_name, image_url, caption }) => {
     const p = getPage(page_name);
     return json(
-      await graphApi("POST", `${p.fb_page_id}/photos`, p.page_access_token, {
+      await graphApi("POST", `${p.fb_page_id}/photos`, p.page_access_token, undefined, {
         url: image_url,
         caption,
       }),
@@ -148,7 +137,9 @@ server.tool(
   { page_name: z.string(), post_id: z.string(), new_message: z.string() },
   async ({ page_name, post_id, new_message }) => {
     const p = getPage(page_name);
-    return json(await graphApi("POST", post_id, p.page_access_token, { message: new_message }));
+    return json(
+      await graphApi("POST", post_id, p.page_access_token, undefined, { message: new_message }),
+    );
   },
 );
 
@@ -169,7 +160,7 @@ server.tool(
   async ({ page_name, message, publish_time }) => {
     const p = getPage(page_name);
     return json(
-      await graphApi("POST", `${p.fb_page_id}/feed`, p.page_access_token, {
+      await graphApi("POST", `${p.fb_page_id}/feed`, p.page_access_token, undefined, {
         message,
         published: "false",
         scheduled_publish_time: String(publish_time),
@@ -200,7 +191,9 @@ server.tool(
   { page_name: z.string(), post_id: z.string(), comment_id: z.string(), message: z.string() },
   async ({ page_name, comment_id, message }) => {
     const p = getPage(page_name);
-    return json(await graphApi("POST", `${comment_id}/comments`, p.page_access_token, { message }));
+    return json(
+      await graphApi("POST", `${comment_id}/comments`, p.page_access_token, undefined, { message }),
+    );
   },
 );
 
@@ -220,7 +213,9 @@ server.tool(
   { page_name: z.string(), comment_id: z.string() },
   async ({ page_name, comment_id }) => {
     const p = getPage(page_name);
-    return json(await graphApi("POST", comment_id, p.page_access_token, { is_hidden: "true" }));
+    return json(
+      await graphApi("POST", comment_id, p.page_access_token, undefined, { is_hidden: "true" }),
+    );
   },
 );
 
@@ -230,7 +225,9 @@ server.tool(
   { page_name: z.string(), comment_id: z.string() },
   async ({ page_name, comment_id }) => {
     const p = getPage(page_name);
-    return json(await graphApi("POST", comment_id, p.page_access_token, { is_hidden: "false" }));
+    return json(
+      await graphApi("POST", comment_id, p.page_access_token, undefined, { is_hidden: "false" }),
+    );
   },
 );
 
@@ -550,9 +547,15 @@ server.tool(
   async ({ page_name, video_url, description, title }) => {
     const p = getPage(page_name);
     debug("reel", "init", p.fb_page_id);
-    const start = await graphApi("POST", `${p.fb_page_id}/video_reels`, p.page_access_token, {
-      upload_phase: "start",
-    });
+    const start = await graphApi(
+      "POST",
+      `${p.fb_page_id}/video_reels`,
+      p.page_access_token,
+      undefined,
+      {
+        upload_phase: "start",
+      },
+    );
     if (isError(start)) return json({ step: "init", ...start });
     const videoId = start.video_id;
 
@@ -572,6 +575,7 @@ server.tool(
       "POST",
       `${p.fb_page_id}/video_reels`,
       p.page_access_token,
+      undefined,
       finishParams,
     );
     if (isError(result)) return json({ step: "publish", video_id: videoId, ...result });
@@ -608,9 +612,15 @@ server.tool(
   async ({ page_name, video_url }) => {
     const p = getPage(page_name);
     debug("video-story", "init", p.fb_page_id);
-    const start = await graphApi("POST", `${p.fb_page_id}/video_stories`, p.page_access_token, {
-      upload_phase: "start",
-    });
+    const start = await graphApi(
+      "POST",
+      `${p.fb_page_id}/video_stories`,
+      p.page_access_token,
+      undefined,
+      {
+        upload_phase: "start",
+      },
+    );
     if (isError(start)) return json({ step: "init", ...start });
     const videoId = start.video_id;
 
@@ -619,10 +629,16 @@ server.tool(
     if (isError(upload)) return json({ step: "upload", video_id: videoId, ...upload });
 
     debug("video-story", "publish", videoId);
-    const result = await graphApi("POST", `${p.fb_page_id}/video_stories`, p.page_access_token, {
-      upload_phase: "finish",
-      video_id: videoId,
-    });
+    const result = await graphApi(
+      "POST",
+      `${p.fb_page_id}/video_stories`,
+      p.page_access_token,
+      undefined,
+      {
+        upload_phase: "finish",
+        video_id: videoId,
+      },
+    );
     if (isError(result)) return json({ step: "publish", video_id: videoId, ...result });
     return json(result);
   },
@@ -635,17 +651,29 @@ server.tool(
   async ({ page_name, photo_url }) => {
     const p = getPage(page_name);
     debug("photo-story", "upload", p.fb_page_id);
-    const uploaded = await graphApi("POST", `${p.fb_page_id}/photos`, p.page_access_token, {
-      url: photo_url,
-      published: "false",
-    });
+    const uploaded = await graphApi(
+      "POST",
+      `${p.fb_page_id}/photos`,
+      p.page_access_token,
+      undefined,
+      {
+        url: photo_url,
+        published: "false",
+      },
+    );
     if (isError(uploaded)) return json({ step: "upload", ...uploaded });
     const photoId = uploaded.id;
 
     debug("photo-story", "publish", photoId);
-    const result = await graphApi("POST", `${p.fb_page_id}/photo_stories`, p.page_access_token, {
-      photo_id: photoId,
-    });
+    const result = await graphApi(
+      "POST",
+      `${p.fb_page_id}/photo_stories`,
+      p.page_access_token,
+      undefined,
+      {
+        photo_id: photoId,
+      },
+    );
     if (isError(result)) return json({ step: "publish", photo_id: photoId, ...result });
     return json(result);
   },
@@ -702,7 +730,9 @@ server.tool(
     const params: Record<string, string> = { file_url: video_url };
     if (title) params.title = title;
     if (description) params.description = description;
-    return json(await graphApi("POST", `${p.fb_page_id}/videos`, p.page_access_token, params));
+    return json(
+      await graphApi("POST", `${p.fb_page_id}/videos`, p.page_access_token, undefined, params),
+    );
   },
 );
 
@@ -716,7 +746,12 @@ server.tool(
     countries: z.string().optional(),
   },
   async ({ type, countries }) => {
-    const token = assets[0].page_access_token;
+    const defaultAsset = getDefaultPageAsset(assets);
+    if (!defaultAsset) {
+      throw new Error("No pages configured. Set FACEBOOK_ASSETS with at least one page token.");
+    }
+
+    const token = defaultAsset.page_access_token;
     const params: Record<string, string> = { type };
     if (countries) params.countries = countries;
     return json(await graphApi("GET", "audio/recommendations", token, params));
@@ -732,7 +767,7 @@ server.tool(
   async ({ page_name, video_id }) => {
     const p = getPage(page_name);
     return json(
-      await graphApi("POST", `${p.fb_page_id}/videos`, p.page_access_token, {
+      await graphApi("POST", `${p.fb_page_id}/videos`, p.page_access_token, undefined, {
         crossposted_video_id: video_id,
       }),
     );

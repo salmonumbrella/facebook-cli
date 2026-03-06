@@ -2,6 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { createProfileStore } from "../../src/lib/profiles.js";
 import { resolveAccessToken } from "../../src/config.js";
+import { getCliEnvVar } from "./env.js";
 
 export type OutputFormat = "json" | "table" | "csv";
 
@@ -80,14 +81,14 @@ export function resolveRuntimeContext(options: GlobalOptions): RuntimeContext {
 
   const accessToken = resolveAccessToken(
     options.accessToken,
-    process.env.FB_ACCESS_TOKEN,
+    getCliEnvVar("FB_ACCESS_TOKEN"),
     profile.access_token,
   );
 
   return {
     output: options.output,
     dryRun: options.dryRun,
-    apiVersion: options.apiVersion ?? process.env.FB_API_VERSION,
+    apiVersion: options.apiVersion ?? getCliEnvVar("FB_API_VERSION"),
     accessToken,
     profileName,
     profilePath,

@@ -150,20 +150,20 @@ export const createCampaign = (
   accountId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", `act_${accountId}/campaigns`, token, payload as any);
+) => deps.graphApi("POST", `act_${accountId}/campaigns`, token, undefined, payload);
 
 export const updateCampaign = (
   deps: Deps,
   campaignId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", campaignId, token, payload as any);
+) => deps.graphApi("POST", campaignId, token, undefined, payload);
 
 export const pauseCampaign = (deps: Deps, campaignId: string, token: string) =>
-  deps.graphApi("POST", campaignId, token, { status: "PAUSED" } as any);
+  deps.graphApi("POST", campaignId, token, undefined, { status: "PAUSED" });
 
 export const activateCampaign = (deps: Deps, campaignId: string, token: string) =>
-  deps.graphApi("POST", campaignId, token, { status: "ACTIVE" } as any);
+  deps.graphApi("POST", campaignId, token, undefined, { status: "ACTIVE" });
 
 export const deleteCampaign = (deps: Deps, campaignId: string, token: string) =>
   deps.graphApi("DELETE", campaignId, token);
@@ -173,56 +173,56 @@ export const createAdSet = (
   accountId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", `act_${accountId}/adsets`, token, payload as any);
+) => deps.graphApi("POST", `act_${accountId}/adsets`, token, undefined, payload);
 
 export const updateAdSet = (
   deps: Deps,
   adSetId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", adSetId, token, payload as any);
+) => deps.graphApi("POST", adSetId, token, undefined, payload);
 
 export const createAd = (
   deps: Deps,
   accountId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", `act_${accountId}/ads`, token, payload as any);
+) => deps.graphApi("POST", `act_${accountId}/ads`, token, undefined, payload);
 
 export const updateAd = (
   deps: Deps,
   adId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", adId, token, payload as any);
+) => deps.graphApi("POST", adId, token, undefined, payload);
 
 export const createCreative = (
   deps: Deps,
   accountId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", `act_${accountId}/adcreatives`, token, payload as any);
+) => deps.graphApi("POST", `act_${accountId}/adcreatives`, token, undefined, payload);
 
 export const uploadImage = (
   deps: Deps,
   accountId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", `act_${accountId}/adimages`, token, payload as any);
+) => deps.graphApi("POST", `act_${accountId}/adimages`, token, undefined, payload);
 
 export const createAudience = (
   deps: Deps,
   accountId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", `act_${accountId}/customaudiences`, token, payload as any);
+) => deps.graphApi("POST", `act_${accountId}/customaudiences`, token, undefined, payload);
 
 export const updateAudience = (
   deps: Deps,
   audienceId: string,
   token: string,
   payload: Record<string, unknown>,
-) => deps.graphApi("POST", audienceId, token, payload as any);
+) => deps.graphApi("POST", audienceId, token, undefined, payload);
 
 export const deleteAudience = (deps: Deps, audienceId: string, token: string) =>
   deps.graphApi("DELETE", audienceId, token);
@@ -271,6 +271,7 @@ export async function duplicateCampaign(
     "POST",
     `${accountPath}/campaigns`,
     token,
+    undefined,
     newCampaignPayload,
   );
 
@@ -283,7 +284,13 @@ export async function duplicateCampaign(
       campaign_id: String(newCampaign?.id ?? ""),
       status: "PAUSED",
     };
-    const createdAdSet = await deps.graphApi("POST", `${accountPath}/adsets`, token, payload);
+    const createdAdSet = await deps.graphApi(
+      "POST",
+      `${accountPath}/adsets`,
+      token,
+      undefined,
+      payload,
+    );
     if (createdAdSet?.id) adSetMap.set(adSetId, String(createdAdSet.id));
   }
 

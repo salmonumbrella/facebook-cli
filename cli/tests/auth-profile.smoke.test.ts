@@ -39,4 +39,10 @@ describe("auth/profile/limits smoke", () => {
     const res = runCli(["limits", "check"]);
     expect(res.exitCode).toBe(0);
   });
+
+  it("honors --output csv for flat command results", () => {
+    const res = runCli(["--output", "csv", "auth", "status"]);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toContain("authenticated,profile,source,token,auth");
+  });
 });

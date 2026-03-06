@@ -133,7 +133,13 @@ export async function createTestCampaigns(
         daily_budget: String(Math.max(1, Math.round(budget.perCampaign))),
       };
       created.push(
-        await deps.graphApi("POST", `${accountPath(accountId)}/campaigns`, token, payload),
+        await deps.graphApi(
+          "POST",
+          `${accountPath(accountId)}/campaigns`,
+          token,
+          undefined,
+          payload,
+        ),
       );
     }
     const delay = 300 * 2 ** Math.floor(i / Math.max(1, batchSize)) + jitter();
@@ -201,11 +207,13 @@ export async function updateCpmBids(
   const updates: any[] = [];
   for (const s of stats) {
     if (s.impressions <= worstImpressions) {
-      updates.push(await deps.graphApi("POST", s.campaignId, token, { status: "PAUSED" }));
+      updates.push(
+        await deps.graphApi("POST", s.campaignId, token, undefined, { status: "PAUSED" }),
+      );
       continue;
     }
     updates.push(
-      await deps.graphApi("POST", s.campaignId, token, {
+      await deps.graphApi("POST", s.campaignId, token, undefined, {
         bid_amount: String(Math.round(cap * 100)),
       }),
     );

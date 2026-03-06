@@ -1,9 +1,12 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 import {
   buildAppAccessToken,
   buildFacebookOAuthUrl,
   clearStoredAuth,
   computeExpiresAt,
+  debugToken,
+  exchangeCodeForToken,
+  exchangeForLongLivedToken,
 } from "../../src/lib/auth.js";
 
 describe("buildFacebookOAuthUrl", () => {
@@ -47,5 +50,50 @@ describe("auth helpers", () => {
     expect(cleared.profiles.default?.access_token).toBeUndefined();
     expect(cleared.profiles.default?.auth).toBeUndefined();
     expect(cleared.profiles.default?.defaults).toEqual({ page_id: "1" });
+  });
+
+  it("uses injected fetch for OAuth exchanges", async () => {
+    const fetchImpl = mock(async (url: string | URL, init?: RequestInit) => {
+      const asUrl = String(url);
+      expect(init?.method).toBe("GET");
+      if (asUrl.includes("/debug_token")) {
+        return new Response('{"data":{"is_valid":true}}', { status: 200 });
+      }
+      return new Response('{"access_token":"token","expires_in":3600}', { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const byCode = await exchangeCodeForToken(
+      {
+        appId: "123",
+        appSecret: "secret",
+        redirectUri: "http://localhost:8484/callback",
+        code: "auth-code",
+        version: "v25.0",
+      },
+      { fetchImpl },
+    );
+    expect(byCode.access_token).toBe("token");
+
+    const byExchange = await exchangeForLongLivedToken(
+      {
+        appId: "123",
+        appSecret: "secret",
+        accessToken: "short-token",
+        version: "v25.0",
+      },
+      { fetchImpl },
+    );
+    expect(byExchange.access_token).toBe("token");
+
+    const debug = await debugToken(
+      {
+        inputToken: "long-token",
+        appAccessToken: "123|secret",
+        version: "v25.0",
+      },
+      { fetchImpl },
+    );
+    expect(debug.data.is_valid).toBe(true);
+    expect(fetchImpl.mock.calls.length).toBe(3);
   });
 });

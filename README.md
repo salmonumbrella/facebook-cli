@@ -104,6 +104,16 @@ Requires [Bun](https://bun.sh) runtime:
 bun install
 ```
 
+### 2.1. Fast Tooling & Git Hooks
+
+- `prek` manages pre-commit hooks (`.pre-commit-config.yaml`).
+- Hooks run `oxlint` and `oxfmt --check` on staged JS/TS/JSON files.
+- Run full local checks with:
+
+```bash
+bun run check
+```
+
 ### 3. Set Up Environment
 
 Create a `.env` file in the project root with a `FACEBOOK_ASSETS` JSON array:
@@ -190,6 +200,19 @@ Profile store path:
 
 Dry-run behavior:
 - `--dry-run` sets `FB_DRY_RUN=1` and blocks non-GET Graph mutations.
+
+HTTP safety controls (`FB_HTTP_*`):
+- `FB_HTTP_MAX_RATE_LIMIT_RETRIES` (default `4`)
+- `FB_HTTP_MAX_SERVER_RETRIES` (default `2`)
+- `FB_HTTP_RETRY_BASE_DELAY_MS` (default `500`)
+- `FB_HTTP_RETRY_MAX_DELAY_MS` (default `10000`)
+- `FB_HTTP_RETRY_JITTER_RATIO` (default `0.2`)
+- `FB_HTTP_CIRCUIT_BREAKER_ENABLED` (default `true`)
+- `FB_HTTP_CIRCUIT_FAILURE_THRESHOLD` (default `5`)
+- `FB_HTTP_CIRCUIT_COOLDOWN_MS` (default `30000`)
+- `FB_HTTP_CIRCUIT_HALF_OPEN_SUCCESSES` (default `1`)
+- `FB_HTTP_GLOBAL_MIN_INTERVAL_MS` (default `50`)
+- `FB_HTTP_TOKEN_MIN_INTERVAL_MS` (default `150`)
 
 ### MCP Tool Categories (Expanded)
 

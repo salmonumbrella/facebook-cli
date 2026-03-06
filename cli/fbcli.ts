@@ -5,9 +5,9 @@
  * Reads FACEBOOK_ASSETS from .env in the fbcli directory.
  */
 
-import { readFileSync, existsSync } from "fs";
-import { dirname, join } from "path";
 import { parseGlobalOptions, resolveRuntimeContext } from "./lib/context.js";
+import { getCliEnvVar } from "./lib/env.js";
+import { resolvePageAssets } from "./lib/page-assets.js";
 import { handleAuthCommand } from "./commands/auth.js";
 import { handleProfileCommand } from "./commands/profile.js";
 import { handleLimitsCommand } from "./commands/limits.js";
@@ -20,15 +20,28 @@ import {
 import { handleInstagramCommand } from "./commands/instagram.js";
 import { handleWhatsappCommand } from "./commands/whatsapp.js";
 import { handlePagesPlusCommand } from "./commands/pages-plus.js";
+import { DEFAULT_GRAPH_API_VERSION, parsePageAssets, type PageAsset } from "../src/config.js";
+import { formatRows } from "../src/lib/output.js";
+import {
+  getDefaultPageAsset,
+  getPageOrThrow,
+  listPageSummaries,
+} from "../src/lib/page-registry.js";
+import {
+  graphApi as sharedGraphApi,
+  graphApiBatch as sharedGraphApiBatch,
+  ruploadApi as sharedRuploadApi,
+  resumableUpload as sharedResumableUpload,
+  type BatchRequest,
+  type BatchResponse,
+} from "../src/api.js";
 
 const VERSION = "2.0.0";
-const GRAPH_API_BASE = "https://graph.facebook.com/v22.0";
-const SCRIPT_DIR = dirname(Bun.main);
-const ENV_PATH = join(SCRIPT_DIR, ".env");
 
 // --- Debug logging (stderr, only when DEBUG=1) ---
 
 const DEBUG = !!process.env.DEBUG;
+let outputFormat: "json" | "table" | "csv" = "json";
 
 function debug(label: string, ...args: unknown[]) {
   if (DEBUG) console.error(`[fbcli:${label}]`, ...args);
@@ -40,51 +53,32 @@ function isError(res: unknown): boolean {
 
 // --- Config ---
 
-interface PageAsset {
-  fb_page_id: string;
-  page_name: string;
-  display_name: string;
-  page_access_token: string;
-}
-
 function loadAssets(): PageAsset[] {
-  if (!existsSync(ENV_PATH)) {
-    die(`Config not found: ${ENV_PATH}\nCreate .env with FACEBOOK_ASSETS in the fbcli directory.`);
-  }
-  const text = readFileSync(ENV_PATH, "utf-8");
-  const match =
-    text.match(/^FACEBOOK_ASSETS\s*=\s*'(.+)'$/m) ??
-    text.match(/^FACEBOOK_ASSETS\s*=\s*"(.+)"$/m) ??
-    text.match(/^FACEBOOK_ASSETS\s*=\s*(.+)$/m);
-  if (!match) die("FACEBOOK_ASSETS not found in " + ENV_PATH);
+  const raw = getCliEnvVar("FACEBOOK_ASSETS");
+  if (!raw) return [];
   try {
-    return JSON.parse(match[1]);
-  } catch {
-    die("FACEBOOK_ASSETS is not valid JSON");
+    return parsePageAssets(JSON.parse(raw));
+  } catch (error) {
+    die(error instanceof Error ? error.message : "FACEBOOK_ASSETS is not valid JSON");
   }
 }
 
 function loadAppConfig(): { appId?: string; userToken?: string } {
-  if (!existsSync(ENV_PATH)) return {};
-  const text = readFileSync(ENV_PATH, "utf-8");
-  const appMatch = text.match(/^FB_APP_ID\s*=\s*['"]?([^'"\n]+)['"]?$/m);
-  const tokenMatch = text.match(/^FB_USER_ACCESS_TOKEN\s*=\s*['"]?([^'"\n]+)['"]?$/m);
   return {
-    appId: appMatch?.[1],
-    userToken: tokenMatch?.[1],
+    appId: getCliEnvVar("FB_APP_ID"),
+    userToken: getCliEnvVar("FB_USER_ACCESS_TOKEN") ?? getCliEnvVar("FB_ACCESS_TOKEN"),
   };
 }
 
 function getPage(assets: PageAsset[], name: string): PageAsset {
-  const page = assets.find((a) => a.page_name === name);
-  if (!page) {
-    const available = assets.map((a) => a.page_name).join(", ") || "(none)";
-    die(`Page '${name}' not found. Available: ${available}`);
+  try {
+    return getPageOrThrow(assets, name);
+  } catch (error) {
+    die(error instanceof Error ? error.message : String(error));
   }
-  return page;
 }
 
-// --- Graph API ---
+// --- Shared API wrappers ---
 
 async function graphApi(
   method: string,
@@ -93,84 +87,13 @@ async function graphApi(
   params?: Record<string, string>,
   body?: Record<string, unknown>,
 ): Promise<unknown> {
-  const url = new URL(`${GRAPH_API_BASE}/${endpoint}`);
-  url.searchParams.set("access_token", token);
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      url.searchParams.set(k, v);
-    }
-  }
-  const opts: RequestInit = { method };
-  if (body) {
-    opts.headers = { "Content-Type": "application/json" };
-    opts.body = JSON.stringify(body);
-  }
   debug("graph", method, endpoint);
-  const res = await fetch(url.toString(), opts);
-  return res.json();
-}
-
-// --- Batch API ---
-
-const BATCH_LIMIT = 50;
-
-interface BatchRequest {
-  method: string;
-  relative_url: string;
-  body?: Record<string, string>;
-}
-
-interface BatchResponse {
-  code: number;
-  body: any;
+  return sharedGraphApi(method, endpoint, token, params, body);
 }
 
 async function graphApiBatch(token: string, requests: BatchRequest[]): Promise<BatchResponse[]> {
-  if (requests.length === 0) return [];
-
-  const results: BatchResponse[] = [];
-  for (let i = 0; i < requests.length; i += BATCH_LIMIT) {
-    const chunk = requests.slice(i, i + BATCH_LIMIT);
-    const batch = chunk.map((r) => {
-      const item: Record<string, string> = {
-        method: r.method,
-        relative_url: r.relative_url,
-      };
-      if (r.body) {
-        item.body = new URLSearchParams(r.body).toString();
-      }
-      return item;
-    });
-
-    const url = new URL(GRAPH_API_BASE);
-    url.searchParams.set("access_token", token);
-    url.searchParams.set("include_headers", "false");
-    url.searchParams.set("batch", JSON.stringify(batch));
-
-    const res = await fetch(url.toString(), { method: "POST" });
-    const raw: Array<{ code: number; body: string } | null> = await res.json();
-
-    for (const item of raw) {
-      if (item === null) {
-        results.push({ code: 0, body: { error: "Request timed out in batch" } });
-      } else {
-        let parsed: any;
-        try {
-          parsed = JSON.parse(item.body);
-        } catch {
-          parsed = item.body;
-        }
-        results.push({ code: item.code, body: parsed });
-      }
-    }
-  }
-  return results;
+  return sharedGraphApiBatch(token, requests);
 }
-
-// --- Rupload / File Helpers ---
-
-const GRAPH_API_VERSION = "v22.0";
-const RUPLOAD_BASE = `https://rupload.facebook.com/video-upload/${GRAPH_API_VERSION}`;
 
 async function ruploadApi(
   endpoint: string,
@@ -178,16 +101,8 @@ async function ruploadApi(
   headers?: Record<string, string>,
   body?: Uint8Array,
 ): Promise<unknown> {
-  const url = endpoint.startsWith("http") ? endpoint : `${RUPLOAD_BASE}/${endpoint}`;
-  const hdrs: Record<string, string> = {
-    Authorization: `OAuth ${token}`,
-    ...headers,
-  };
-  const opts: RequestInit = { method: "POST", headers: hdrs };
-  if (body) opts.body = body;
   debug("rupload", endpoint);
-  const res = await fetch(url, opts);
-  return res.json();
+  return sharedRuploadApi(endpoint, token, headers, body);
 }
 
 async function resumableUpload(
@@ -199,27 +114,7 @@ async function resumableUpload(
   fileType: string,
 ): Promise<any> {
   debug("upload:init", appId, fileName, fileSize);
-  const initRes = (await graphApi("POST", `${appId}/uploads`, userToken, {
-    file_name: fileName,
-    file_length: String(fileSize),
-    file_type: fileType,
-  })) as Record<string, any>;
-  if (isError(initRes)) return initRes;
-  const sessionId = initRes.id;
-
-  debug("upload:transfer", sessionId);
-  const uploadUrl = `${GRAPH_API_BASE}/${sessionId}`;
-  const res = await fetch(uploadUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `OAuth ${userToken}`,
-      file_offset: "0",
-      "Content-Type": "application/octet-stream",
-    },
-    body: fileData,
-  });
-  const result = (await res.json()) as Record<string, any>;
-  return result.h;
+  return sharedResumableUpload(appId, userToken, fileData, fileName, fileSize, fileType);
 }
 
 function isUrl(str: string): boolean {
@@ -243,8 +138,33 @@ function die(msg: string): never {
   process.exit(1);
 }
 
+function isRowObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function extractRows(data: unknown): Record<string, unknown>[] | undefined {
+  if (Array.isArray(data) && data.every(isRowObject)) return data;
+  if (!isRowObject(data)) return undefined;
+  if (Array.isArray(data.data) && data.data.every(isRowObject)) return data.data;
+  if (Object.values(data).every((value) => !isRowObject(value) && !Array.isArray(value))) {
+    return [data];
+  }
+  return undefined;
+}
+
 function out(data: unknown): void {
-  console.log(JSON.stringify(data, null, 2));
+  if (outputFormat === "json") {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  const rows = extractRows(data);
+  if (!rows) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  console.log(formatRows(rows, outputFormat));
 }
 
 function requireArgs(args: string[], count: number, usage: string): void {
@@ -288,13 +208,7 @@ async function resolveIds(arg: string | undefined): Promise<string> {
 // --- Commands ---
 
 async function cmdPages(assets: PageAsset[]) {
-  out(
-    assets.map((a) => ({
-      page_name: a.page_name,
-      display_name: a.display_name,
-      fb_page_id: a.fb_page_id,
-    })),
-  );
+  out(listPageSummaries(assets));
 }
 
 async function cmdPosts(page: PageAsset) {
@@ -307,7 +221,7 @@ async function cmdPosts(page: PageAsset) {
 
 async function cmdPost(page: PageAsset, message: string) {
   out(
-    await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, {
+    await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, undefined, {
       message,
     }),
   );
@@ -315,7 +229,7 @@ async function cmdPost(page: PageAsset, message: string) {
 
 async function cmdPostImage(page: PageAsset, imageUrl: string, caption: string) {
   out(
-    await graphApi("POST", `${page.fb_page_id}/photos`, page.page_access_token, {
+    await graphApi("POST", `${page.fb_page_id}/photos`, page.page_access_token, undefined, {
       url: imageUrl,
       caption,
     }),
@@ -323,7 +237,7 @@ async function cmdPostImage(page: PageAsset, imageUrl: string, caption: string) 
 }
 
 async function cmdUpdatePost(page: PageAsset, postId: string, message: string) {
-  out(await graphApi("POST", postId, page.page_access_token, { message }));
+  out(await graphApi("POST", postId, page.page_access_token, undefined, { message }));
 }
 
 async function cmdDeletePost(page: PageAsset, postId: string) {
@@ -332,7 +246,7 @@ async function cmdDeletePost(page: PageAsset, postId: string) {
 
 async function cmdSchedule(page: PageAsset, message: string, timestamp: string) {
   out(
-    await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, {
+    await graphApi("POST", `${page.fb_page_id}/feed`, page.page_access_token, undefined, {
       message,
       published: "false",
       scheduled_publish_time: timestamp,
@@ -350,7 +264,7 @@ async function cmdComments(page: PageAsset, postId: string) {
 
 async function cmdReply(page: PageAsset, commentId: string, message: string) {
   out(
-    await graphApi("POST", `${commentId}/comments`, page.page_access_token, {
+    await graphApi("POST", `${commentId}/comments`, page.page_access_token, undefined, {
       message,
     }),
   );
@@ -362,7 +276,7 @@ async function cmdDeleteComment(page: PageAsset, commentId: string) {
 
 async function cmdHideComment(page: PageAsset, commentId: string) {
   out(
-    await graphApi("POST", commentId, page.page_access_token, {
+    await graphApi("POST", commentId, page.page_access_token, undefined, {
       is_hidden: "true",
     }),
   );
@@ -370,7 +284,7 @@ async function cmdHideComment(page: PageAsset, commentId: string) {
 
 async function cmdUnhideComment(page: PageAsset, commentId: string) {
   out(
-    await graphApi("POST", commentId, page.page_access_token, {
+    await graphApi("POST", commentId, page.page_access_token, undefined, {
       is_hidden: "false",
     }),
   );
@@ -558,7 +472,7 @@ async function cmdPublishReel(
   const token = page.page_access_token;
   // Step 1: Init
   debug("reel", "init", page.fb_page_id);
-  const init = (await graphApi("POST", `${page.fb_page_id}/video_reels`, token, {
+  const init = (await graphApi("POST", `${page.fb_page_id}/video_reels`, token, undefined, {
     upload_phase: "start",
   })) as Record<string, any>;
   if (isError(init)) {
@@ -598,7 +512,13 @@ async function cmdPublishReel(
   };
   if (description) finishParams.description = description;
   if (title) finishParams.title = title;
-  const result = await graphApi("POST", `${page.fb_page_id}/video_reels`, token, finishParams);
+  const result = await graphApi(
+    "POST",
+    `${page.fb_page_id}/video_reels`,
+    token,
+    undefined,
+    finishParams,
+  );
   if (isError(result)) {
     out({ step: "publish", video_id: videoId, ...(result as object) });
     return;
@@ -617,7 +537,7 @@ async function cmdVideoStatus(page: PageAsset, videoId: string) {
 async function cmdVideoStory(page: PageAsset, source: string) {
   const token = page.page_access_token;
   debug("video-story", "init", page.fb_page_id);
-  const init = (await graphApi("POST", `${page.fb_page_id}/video_stories`, token, {
+  const init = (await graphApi("POST", `${page.fb_page_id}/video_stories`, token, undefined, {
     upload_phase: "start",
   })) as Record<string, any>;
   if (isError(init)) {
@@ -648,7 +568,7 @@ async function cmdVideoStory(page: PageAsset, source: string) {
   }
 
   debug("video-story", "publish", videoId);
-  const result = await graphApi("POST", `${page.fb_page_id}/video_stories`, token, {
+  const result = await graphApi("POST", `${page.fb_page_id}/video_stories`, token, undefined, {
     upload_phase: "finish",
     video_id: videoId,
   });
@@ -662,7 +582,7 @@ async function cmdVideoStory(page: PageAsset, source: string) {
 async function cmdPhotoStory(page: PageAsset, photoUrl: string) {
   const token = page.page_access_token;
   debug("photo-story", "upload", page.fb_page_id);
-  const upload = (await graphApi("POST", `${page.fb_page_id}/photos`, token, {
+  const upload = (await graphApi("POST", `${page.fb_page_id}/photos`, token, undefined, {
     url: photoUrl,
     published: "false",
   })) as Record<string, any>;
@@ -673,7 +593,7 @@ async function cmdPhotoStory(page: PageAsset, photoUrl: string) {
   const photoId = upload.id;
 
   debug("photo-story", "publish", photoId);
-  const result = await graphApi("POST", `${page.fb_page_id}/photo_stories`, token, {
+  const result = await graphApi("POST", `${page.fb_page_id}/photo_stories`, token, undefined, {
     photo_id: photoId,
   });
   if (isError(result)) {
@@ -694,7 +614,7 @@ async function cmdSlideshow(
   transitionMs: number,
 ) {
   out(
-    await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, {
+    await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, undefined, {
       slideshow_spec: JSON.stringify({
         images_urls: imageUrls,
         duration_ms: durationMs,
@@ -715,7 +635,7 @@ async function cmdPublishVideo(
     const params: Record<string, string> = { file_url: source };
     if (title) params.title = title;
     if (description) params.description = description;
-    out(await graphApi("POST", `${page.fb_page_id}/videos`, token, params));
+    out(await graphApi("POST", `${page.fb_page_id}/videos`, token, undefined, params));
   } else {
     const config = loadAppConfig();
     if (!config.appId || !config.userToken) {
@@ -733,14 +653,15 @@ async function cmdPublishVideo(
     const params: Record<string, string> = { file_url: handle };
     if (title) params.title = title;
     if (description) params.description = description;
-    out(await graphApi("POST", `${page.fb_page_id}/videos`, token, params));
+    out(await graphApi("POST", `${page.fb_page_id}/videos`, token, undefined, params));
   }
 }
 
-async function cmdMusic(type: string, countries?: string) {
-  const assets = loadAssets();
-  if (assets.length === 0) die("No pages configured — need a token for music API");
-  const token = assets[0].page_access_token;
+async function cmdMusic(type: string, countries?: string, accessToken?: string) {
+  const assets = await resolvePageAssets(loadAssets(), accessToken);
+  const defaultAsset = getDefaultPageAsset(assets);
+  if (!defaultAsset) die("No pages configured — need a token for music API");
+  const token = defaultAsset.page_access_token;
   const params: Record<string, string> = { type };
   if (countries) params.countries = countries;
   out(await graphApi("GET", "audio/recommendations", token, params));
@@ -748,7 +669,7 @@ async function cmdMusic(type: string, countries?: string) {
 
 async function cmdCrosspost(page: PageAsset, videoId: string) {
   out(
-    await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, {
+    await graphApi("POST", `${page.fb_page_id}/videos`, page.page_access_token, undefined, {
       crossposted_video_id: videoId,
     }),
   );
@@ -1021,7 +942,7 @@ CONFIG
 
   Multiple pages supported — add more objects to the JSON array.
 
-  Graph API version: v22.0
+  Graph API version: ${DEFAULT_GRAPH_API_VERSION}
 `;
 
 // --- Main ---
@@ -1029,6 +950,7 @@ CONFIG
 async function main() {
   const parsedGlobal = parseGlobalOptions(process.argv.slice(2));
   const runtime = resolveRuntimeContext(parsedGlobal);
+  outputFormat = runtime.output;
   if (runtime.dryRun) process.env.FB_DRY_RUN = "1";
   if (runtime.apiVersion) process.env.FB_API_VERSION = runtime.apiVersion;
   if (runtime.accessToken) process.env.FB_ACCESS_TOKEN = runtime.accessToken;
@@ -1102,7 +1024,7 @@ async function main() {
   }
 
   if (command === "pages") {
-    const assets = loadAssets();
+    const assets = await resolvePageAssets(loadAssets(), runtime.accessToken);
     return cmdPages(assets);
   }
 
@@ -1118,11 +1040,16 @@ async function main() {
     const type = typeMap[typeArg] ?? typeArg;
     const countryIdx = rest.indexOf("--country");
     const countries = countryIdx !== -1 && rest[countryIdx + 1] ? rest[countryIdx + 1] : undefined;
-    return cmdMusic(type, countries);
+    return cmdMusic(type, countries, runtime.accessToken);
   }
 
   // All other commands need a page
-  const assets = loadAssets();
+  const assets = await resolvePageAssets(loadAssets(), runtime.accessToken);
+  if (assets.length === 0) {
+    die(
+      "No page assets available. Run `fbcli auth login` and `fbcli pages`, or set FACEBOOK_ASSETS in cli/.env.",
+    );
+  }
 
   // Commands that take <page> as first arg
   const pageName = rest[0];

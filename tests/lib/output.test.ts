@@ -11,4 +11,9 @@ describe("formatRows", () => {
   it("supports csv", () => {
     expect(formatRows(rows, "csv").trim()).toBe("id,name\n1,A");
   });
+
+  it("supports table", () => {
+    expect(formatRows(rows, "table")).toContain("id");
+    expect(formatRows(rows, "table")).toContain("A");
+  });
 });
