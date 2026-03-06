@@ -27,3 +27,19 @@ jobs:
 
       - name: Test
         run: go test -v -race ./cmd/... ./internal/...
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install JS deps
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint TS
+        run: bun run lint
+
+      - name: Test TS
+        run: bun test
