@@ -7,8 +7,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { loadAssets, type PageAsset } from "./config.js";
-import { graphApi, graphApiBatch, ruploadApi, debug, isError } from "./api.js";
+import { loadAssets, getGraphApiBase, type PageAsset } from "./config.js";
+import { graphApi, graphApiBatch, ruploadApi, paginateAll, debug, isError } from "./api.js";
 import { getDefaultPageAsset, getPageOrThrow, listPageSummaries } from "./lib/page-registry.js";
 import { registerAdsTools } from "./tools/ads-tools.js";
 import { registerBusinessTools } from "./tools/business-tools.js";
@@ -306,10 +306,9 @@ server.tool(
   { page_name: z.string(), post_id: z.string() },
   async ({ page_name, post_id }) => {
     const p = getPage(page_name);
-    const data = await graphApi("GET", `${post_id}/comments`, p.page_access_token, {
-      fields: "id",
-    });
-    return json({ comment_count: (data.data ?? []).length });
+    const url = `${getGraphApiBase()}/${post_id}/comments?fields=id&access_token=${encodeURIComponent(p.page_access_token)}`;
+    const allComments = await paginateAll<{ id: string }>(url);
+    return json({ comment_count: allComments.length });
   },
 );
 
@@ -455,11 +454,10 @@ server.tool(
   { page_name: z.string(), post_id: z.string() },
   async ({ page_name, post_id }) => {
     const p = getPage(page_name);
-    const data = await graphApi("GET", `${post_id}/comments`, p.page_access_token, {
-      fields: "id,message,from,created_time",
-    });
+    const url = `${getGraphApiBase()}/${post_id}/comments?fields=id,message,from,created_time&access_token=${encodeURIComponent(p.page_access_token)}`;
+    const allComments = await paginateAll<{ id: string; from?: { id: string } }>(url);
     const counter: Record<string, number> = {};
-    for (const comment of data.data ?? []) {
+    for (const comment of allComments) {
       const userId = comment.from?.id;
       if (userId) counter[userId] = (counter[userId] ?? 0) + 1;
     }
