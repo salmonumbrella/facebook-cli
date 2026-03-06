@@ -222,21 +222,21 @@ func PostMetric(ctx context.Context, client *api.Client, page PageAsset, postID 
 }
 
 func TopCommenters(ctx context.Context, client *api.Client, page PageAsset, postID string) ([]map[string]any, error) {
-	response, err := ListComments(ctx, client, page, postID)
+	u := fmt.Sprintf("%s/%s/comments?fields=id,message,from,created_time&access_token=%s", client.GraphBase(), postID, page.PageAccessToken)
+	allComments, err := client.PaginateAll(ctx, u, 0)
 	if err != nil {
 		return nil, err
 	}
-	row := normalizeGraphObject(response)
-	items, _ := row["data"].([]any)
+
 	counter := map[string]int{}
-	for _, item := range items {
-		comment := normalizeGraphObject(item)
+	for _, comment := range allComments {
 		from := normalizeGraphObject(comment["from"])
 		userID := asString(from["id"])
 		if userID != "" {
 			counter[userID]++
 		}
 	}
+
 	type pair struct {
 		UserID string
 		Count  int
@@ -263,15 +263,12 @@ func TopCommenters(ctx context.Context, client *api.Client, page PageAsset, post
 }
 
 func CommentCount(ctx context.Context, client *api.Client, page PageAsset, postID string) (map[string]any, error) {
-	response, err := client.Graph(ctx, "GET", postID+"/comments", page.PageAccessToken, map[string]string{
-		"fields": "id",
-	}, nil)
+	u := fmt.Sprintf("%s/%s/comments?fields=id&access_token=%s", client.GraphBase(), postID, page.PageAccessToken)
+	allComments, err := client.PaginateAll(ctx, u, 0)
 	if err != nil {
 		return nil, err
 	}
-	row := normalizeGraphObject(response)
-	items, _ := row["data"].([]any)
-	return map[string]any{"comment_count": len(items)}, nil
+	return map[string]any{"comment_count": len(allComments)}, nil
 }
 
 func SendDM(ctx context.Context, client *api.Client, page PageAsset, userID string, message string) (any, error) {
