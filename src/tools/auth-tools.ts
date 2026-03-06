@@ -4,22 +4,10 @@ import { z } from "zod";
 import { resolveAccessToken } from "../config.js";
 import { clearStoredAuth } from "../lib/auth.js";
 import { createProfileStore } from "../lib/profiles.js";
-
-interface ToolServerLike {
-  tool: (
-    name: string,
-    description: string,
-    schema: Record<string, z.ZodTypeAny>,
-    handler: (args: Record<string, unknown>) => Promise<any>,
-  ) => void;
-}
+import { json, type ToolServerLike } from "./shared.js";
 
 function profilePath(input?: string): string {
   return input ?? join(homedir(), ".config", "facebook-cli", "profiles.json");
-}
-
-function json(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
 
 export function registerAuthTools(server: ToolServerLike): void {

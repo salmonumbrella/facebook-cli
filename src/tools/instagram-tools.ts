@@ -1,36 +1,9 @@
 import { z } from "zod";
 import { listIgAccounts, listIgMedia, publishIgMedia } from "../domains/instagram.js";
-
-type GraphFn = (
-  method: string,
-  endpoint: string,
-  token: string,
-  params?: Record<string, string>,
-  body?: Record<string, unknown>,
-) => Promise<any>;
-
-interface ToolServerLike {
-  tool: (
-    name: string,
-    description: string,
-    schema: Record<string, z.ZodTypeAny>,
-    handler: (args: Record<string, unknown>) => Promise<any>,
-  ) => void;
-}
+import { json, parseObject, type GraphFn, type ToolServerLike } from "./shared.js";
 
 export interface InstagramToolDeps {
   graphApi: GraphFn;
-}
-
-function json(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
-}
-
-function parseObject(input?: string): Record<string, string> {
-  if (!input) return {};
-  const parsed = JSON.parse(input);
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-  return parsed as Record<string, string>;
 }
 
 function parseMedia(input?: string): {

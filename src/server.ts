@@ -16,6 +16,7 @@ import { registerInstagramTools } from "./tools/instagram-tools.js";
 import { registerWhatsappTools } from "./tools/whatsapp-tools.js";
 import { registerPagesPlusTools } from "./tools/pages-plus-tools.js";
 import { registerAuthTools } from "./tools/auth-tools.js";
+import { json, type ToolServerLike } from "./tools/shared.js";
 
 // --- Page registry ---
 
@@ -23,10 +24,6 @@ const assets = loadAssets();
 
 function getPage(name: string): PageAsset {
   return getPageOrThrow(assets, name);
-}
-
-function json(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
 }
 
 // --- Insight metrics ---
@@ -70,12 +67,12 @@ async function getInsight(pageName: string, postId: string, metric: string) {
 // --- Server ---
 
 const server = new McpServer({ name: "FacebookMCP", version: "3.0.0" });
-registerAdsTools(server as any, { graphApi });
-registerBusinessTools(server as any, { graphApi });
-registerInstagramTools(server as any, { graphApi });
-registerWhatsappTools(server as any, { graphApi });
-registerPagesPlusTools(server as any, { graphApi });
-registerAuthTools(server as any);
+registerAdsTools(server as ToolServerLike, { graphApi });
+registerBusinessTools(server as ToolServerLike, { graphApi });
+registerInstagramTools(server as ToolServerLike, { graphApi });
+registerWhatsappTools(server as ToolServerLike, { graphApi });
+registerPagesPlusTools(server as ToolServerLike, { graphApi });
+registerAuthTools(server as ToolServerLike);
 
 // ── Pages ───────────────────────────────────────────────────────────────
 
