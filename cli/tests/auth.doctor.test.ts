@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RuntimeContext } from "../lib/context.js";
 import { runAuthDoctor, type DoctorDeps } from "../commands/auth/doctor.js";
+import { withEnv } from "./helpers.js";
 
 function makeRuntime(profilePath: string, accessToken?: string): RuntimeContext {
   return {
@@ -14,22 +15,6 @@ function makeRuntime(profilePath: string, accessToken?: string): RuntimeContext 
     profileName: "default",
     profilePath,
   };
-}
-
-function withEnv<T>(values: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
-  const previous = new Map<string, string | undefined>();
-  for (const [key, value] of Object.entries(values)) {
-    previous.set(key, process.env[key]);
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
-
-  return fn().finally(() => {
-    for (const [key, value] of previous.entries()) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  });
 }
 
 const tempDirs: string[] = [];

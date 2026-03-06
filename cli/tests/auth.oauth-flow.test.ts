@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createProfileStore } from "../../src/lib/profiles.js";
 import type { RuntimeContext } from "../lib/context.js";
 import { runAuthLogin, runAuthRefresh, type OAuthFlowDeps } from "../commands/auth/oauth-flow.js";
+import { withEnv } from "./helpers.js";
 
 function makeRuntime(profilePath: string): RuntimeContext {
   return {
@@ -15,22 +16,6 @@ function makeRuntime(profilePath: string): RuntimeContext {
     profileName: "default",
     profilePath,
   };
-}
-
-function withEnv<T>(values: Record<string, string | undefined>, fn: () => Promise<T>): Promise<T> {
-  const previous = new Map<string, string | undefined>();
-  for (const [key, value] of Object.entries(values)) {
-    previous.set(key, process.env[key]);
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
-
-  return fn().finally(() => {
-    for (const [key, value] of previous.entries()) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  });
 }
 
 const tempDirs: string[] = [];
