@@ -1,5 +1,7 @@
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
 
+const MAX_TOKEN_ENTRIES = 500;
+
 const DEFAULTS = {
   maxRateLimitRetries: 4,
   maxServerRetries: 2,
@@ -252,6 +254,10 @@ class RequestPacer {
       const markAt = Date.now();
       this.globalLastAtMs = markAt;
       if (tokenKey) this.lastAtByToken.set(tokenKey, markAt);
+      if (this.lastAtByToken.size > MAX_TOKEN_ENTRIES) {
+        const firstKey = this.lastAtByToken.keys().next().value;
+        if (firstKey !== undefined) this.lastAtByToken.delete(firstKey);
+      }
     } finally {
       release();
     }
